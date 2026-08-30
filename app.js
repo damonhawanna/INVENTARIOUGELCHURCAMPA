@@ -221,27 +221,205 @@
     return partes.length ? partes.join(" ") : "—";
   }
 
-  function exportarCSV() {
-    var cols = [
-      "Codigo Patrimonial", "Denominacion Bien", "Tipo", "Nro Doc Adquisicion",
-      "Fecha Adquisicion", "Valor Adquisicion", "Valor Neto", "Estado", "Condicion",
-      "Marca", "Modelo", "Serie", "Color", "Responsable"
-    ];
-    var filas = inventarioActual.filter(function (r) {
-      return aplicarFiltroUnico(r);
-    });
-    var lines = [cols.join(";")];
-    filas.forEach(function (r) {
-      lines.push([
-        r.cod, r.bien, r.tipo, r.doc, r.fecha, r.vadq, r.vneto,
-        r.estado, r.cond, r.marca, r.modelo, r.serie, r.color, responsable(r)
-      ].map(csvCelda).join(";"));
-    });
-    var nombre = "inventario_" + (institucionSeleccionada.nombre.replace(/[^\w]+/g, "_")) + ".csv";
-    var blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
-    el.exportBtn.href = URL.createObjectURL(blob);
-    el.exportBtn.download = nombre;
+  function xmlEsc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
   }
+
+  function exportarXLSX() {
+    var filas = inventarioActual.filter(function (r) { return aplicarFiltroUnico(r); });
+    var nombreArchivo = "inventario_" + (institucionSeleccionada.nombre.replace(/[^\w]+/g, "_")) + ".xlsx";
+
+    var columnasDesc = [
+      { h: "N°", v: function (r, i) { return i + 1; } },
+      { h: "Código Patrimonial", v: function (r) { return r.cod; } },
+      { h: "Denominación del Bien", v: function (r) { return r.bien; } },
+      { h: "Tipo", v: function (r) { return r.tipo; } },
+      { h: "N° Doc Adquisición", v: function (r) { return r.doc; } },
+      { h: "Fecha Adquisición", v: function (r) { return r.fecha; } },
+      { h: "Valor Adquisición", v: function (r) { return numOrTexto(r.vadq); } },
+      { h: "Valor Neto", v: function (r) { return numOrTexto(r.vneto); } },
+      { h: "Estado", v: function (r) { return estadoTexto(r.estado); } },
+      { h: "Condición", v: function (r) { return r.cond; } },
+      { h: "Marca", v: function (r) { return r.marca; } },
+      { h: "Modelo", v: function (r) { return r.modelo; } },
+      { h: "Serie", v: function (r) { return r.serie; } },
+      { h: "Color", v: function (r) { return r.color; } },
+      { h: "Responsable", v: function (r) { return responsable(r); } }
+    ];
+
+    var filasExcel = [["UGEL CHURCAMPA - INVENTARIO PATRIMONIAL"]];
+    filasExcel.push(["Institución: " + institucionSeleccionada.nombre, "", "", "Total de bienes: " + filas.length]);
+    filasExcel.push([]);
+    filasExcel.push(columnasDesc.map(function (c) { return c.h; }));
+    filas.forEach(function (r, i) {
+      filasExcel.push(columnasDesc.map(function (c) { return c.v(r, i); }));
+    });
+
+    var zip = crearXLSX(filasExcel);
+    var blob = new Blob([zip], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    el.exportBtn.href = URL.createObjectURL(blob);
+    el.exportBtn.download = nombreArchivo;
+  }
+
+  function numOrTexto(v) {
+    if (!v) return "";
+    var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
+    return isNaN(n) ? String(v) : n;
+  }
+  function estadoTexto(e) {
+    var map = { B: "Bueno", R: "Regular", N: "Nuevo/N" };
+    return e ? (map[e] || e) : "";
+  }
+
+  // ---------- Generador de .xlsx (OOXML) en JS puro ----------
+  function crc32(bytes) {
+    var table = crc32.table;
+    if (!table) {
+      table = crc32.table = new Int32Array(256);
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        table[n] = c;
+      }
+    }
+    var crc = -1;
+    for (var i = 0; i < bytes.length; i++) crc = (crc >>> 8) ^ table[(crc ^ bytes[i]) & 0xFF];
+    return (crc ^ -1) >>> 0;
+  }
+  function u16(n) { return [n & 255, (n >> 8) & 255]; }
+  function u32(n) {
+    n >>>= 0;
+    return [n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >> 24) & 255];
+  }
+  function utf8(str) {
+    return new TextEncoder().encode(str);
+  }
+  function dosTime(date) {
+    var d = date || new Date();
+    return (((d.getFullYear() - 1980) & 0x7F) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  }
+  function dosDate() {
+    var d = new Date();
+    return (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  }
+  function crearZip(entries) {
+    var chunks = [];
+    var central = [];
+    var sizeAll = 0;
+    var crc16 = null, crc32v = null;
+
+    entries.forEach(function (e, idx) {
+      var nameBytes = utf8(e.name);
+      var data = e.data;
+      var crc = crc32(data);
+      var csize = data.length, usize = data.length;
+
+      var lfh = u32(0x04034b50).concat(
+        u16(20), u16(0), u16(0), u16(dosTime()), u16(dosDate()),
+        u32(crc), u32(csize), u32(usize), u16(nameBytes.length), u16(0)
+      );
+      chunks.push(new Uint8Array(lfh.concat(Array.from(nameBytes), Array.from(data))));
+
+      var offset = sizeAll;
+      sizeAll += lfh.length + nameBytes.length + data.length;
+
+      var cd = u32(0x02014b50).concat(
+        u16(20), u16(20), u16(0), u16(0), u16(dosTime()), u16(dosDate()),
+        u32(crc), u32(csize), u32(usize), u16(nameBytes.length), u16(0),
+        u16(0), u16(0), u16(0), u32(0), u32(offset)
+      );
+      central.push(new Uint8Array(cd.concat(Array.from(nameBytes))));
+    });
+
+    var total = chunks.reduce(function (s, c) { return s + c.length; }, 0);
+    var centralBytes = new Uint8Array(central.reduce(function (s, c) { return s + c.length; }, 0));
+    var off = 0;
+    central.forEach(function (c) { centralBytes.set(c, off); off += c.length; });
+
+    var cdStart = total;
+    var eocd = u32(0x06054b50).concat(
+      u16(0), u16(0), u16(entries.length), u16(entries.length),
+      u32(centralBytes.length), u32(cdStart), u16(0)
+    );
+    var out = new Uint8Array(total + centralBytes.length + eocd.length);
+    off = 0;
+    chunks.forEach(function (c) { out.set(c, off); off += c.length; });
+    out.set(centralBytes, off);
+    out.set(new Uint8Array(eocd), off + centralBytes.length);
+    return out;
+  }
+
+  function crearXLSX(filas) {
+    var nrows = filas.length;
+    var ncols = 0;
+    filas.forEach(function (f) { if (f.length > ncols) ncols = f.length; });
+
+    function colLetra(i) {
+      var s = "";
+      i += 1;
+      while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); }
+      return s;
+    }
+
+    var sheetRows = "";
+    filas.forEach(function (row, ri) {
+      sheetRows += '<row r="' + (ri + 1) + '">';
+      for (var ci = 0; ci < ncols; ci++) {
+        var cellRef = colLetra(ci) + (ri + 1);
+        var val = row[ci];
+        var cell;
+        if (typeof val === "number") {
+          cell = '<c r="' + cellRef + '"><v>' + val + '</v></c>';
+        } else {
+          cell = '<c r="' + cellRef + '" t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(val) + '</t></is></c>';
+        }
+        sheetRows += cell;
+      }
+      sheetRows += "</row>";
+    });
+
+    var sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<sheetData>' + sheetRows + '</sheetData></worksheet>';
+
+    var contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '</Types>';
+
+    var rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '</Relationships>';
+
+    var workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+      '</Relationships>';
+
+    var workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<sheets><sheet name="Inventario" sheetId="1" r:id="rId1"/></sheets></workbook>';
+
+    var contentXml = {
+      "[Content_Types].xml": contentTypes,
+      "_rels/.rels": rels,
+      "xl/_rels/workbook.xml.rels": workbookRels,
+      "xl/workbook.xml": workbook,
+      "xl/worksheets/sheet1.xml": sheetXml
+    };
+
+    var names = ["[Content_Types].xml", "_rels/.rels", "xl/_rels/workbook.xml.rels", "xl/workbook.xml", "xl/worksheets/sheet1.xml"];
+    var entries = names.map(function (n) { return { name: n, data: utf8(contentXml[n]) }; });
+    return crearZip(entries);
+  }
+
   function aplicarFiltroUnico(r) {
     var qBien = normalize(el.filterBien.value).trim();
     if (qBien && normalize(r.bien).indexOf(qBien) === -1) return false;
@@ -249,10 +427,6 @@
     if (el.filterCond.value && (r.cond || "") !== el.filterCond.value) return false;
     if (el.filterTipo.value && (r.tipo || "") !== el.filterTipo.value) return false;
     return true;
-  }
-  function csvCelda(v) {
-    v = (v == null ? "" : String(v)).replace(/"/g, '""');
-    return /[";\n]/.test(v) ? '"' + v + '"' : v;
   }
 
   var COLUMNAS = [
@@ -363,7 +537,7 @@
     el.filterEstado.addEventListener("change", aplicarFiltros);
     el.filterCond.addEventListener("change", aplicarFiltros);
     el.filterTipo.addEventListener("change", aplicarFiltros);
-    el.exportBtn.addEventListener("click", exportarCSV);
+    el.exportBtn.addEventListener("click", exportarXLSX);
   }
 
   if (document.readyState === "loading") {

@@ -10,7 +10,7 @@ Funciona **100 % offline** (los datos están embebidos en `data.js`, publicados 
 - Lista de instituciones coincidentes con la búsqueda.
 - Inventario completo de la institución seleccionada.
 - Filtros por bien, estado (Bueno/Regular/Nuevo), condición y tipo.
-- Exportación a CSV.
+- Exportación a Excel (.xlsx) con los filtros aplicados.
 - Funciona sin conexión a internet una vez cargada.
 
 ## Archivos
@@ -21,6 +21,7 @@ Funciona **100 % offline** (los datos están embebidos en `data.js`, publicados 
 | `styles.css` | Estilos |
 | `app.js` | Lógica del cliente |
 | `data.js` | Datos del inventario (48 995 registros, 267 instituciones) |
+| `logo.png` | Logo de la UGEL Churcampa |
 | `generar_datos.py` | Script para regenerar `data.js` desde el `.xls` |
 
 ## Regenerar datos desde el Excel
