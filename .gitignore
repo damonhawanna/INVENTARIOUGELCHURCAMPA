@@ -1,0 +1,10 @@
+# Archivos temporales
+*.tmp
+*~
+*.log
+__pycache__/
+*.pyc
+
+# Datos fuente originales (no publicar el .xls)
+*.xls
+*.xlsx

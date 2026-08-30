@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INVENTARIOUGELCHURCAMPA</title>
+  <meta name="description" content="Consulta del inventario patrimonial de las instituciones educativas de la UGEL Churcampa.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-logo">UGEL</div>
+        <div>
+          <h1>INVENTARIOUGELCHURCAMPA</h1>
+          <p class="subtitle">Consulta del inventario patrimonial de instituciones educativas</p>
+        </div>
+      </div>
+      <div id="loading" class="loading" hidden>
+        <span class="spinner"></span> Cargando datos&hellip;
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Paso 1: busqueda de institucion -->
+    <section id="searchStep" class="card">
+      <h2>Buscar institución educativa</h2>
+      <div class="search-row">
+        <input type="text" id="searchInput"
+               placeholder="Escribe el nombre, código o ubicación (ej: Churcampa, 35009, Milpo)&hellip;"
+               autocomplete="off" spellcheck="false">
+        <button id="searchBtn" class="btn btn-primary">Buscar</button>
+      </div>
+      <div id="resultCount" class="result-count" hidden></div>
+      <ul id="instList" class="inst-list" hidden></ul>
+      <div id="searchEmpty" class="empty" hidden>No se encontraron instituciones con ese texto.</div>
+    </section>
+
+    <!-- Paso 2: inventario de la institucion seleccionada -->
+    <section id="inventoryStep" class="card" hidden>
+      <div class="inv-header">
+        <div>
+          <button id="backBtn" class="btn btn-ghost">&larr; Nueva búsqueda</button>
+          <h2 id="instTitle"></h2>
+          <div id="instCat" class="inst-cat"></div>
+        </div>
+        <div id="instStats" class="inst-stats"></div>
+      </div>
+
+      <!-- filtros -->
+      <div class="filters">
+        <div class="filter">
+          <label for="filterBien">Bien</label>
+          <input type="text" id="filterBien" placeholder="Filtrar por bien (mesa, silla, laptop&hellip;)" autocomplete="off">
+        </div>
+        <div class="filter">
+          <label for="filterEstado">Estado</label>
+          <select id="filterEstado">
+            <option value="">Todos</option>
+            <option value="B">Bueno (B)</option>
+            <option value="R">Regular (R)</option>
+            <option value="N">Nuevo / No aplica (N)</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="filterCond">Condición</label>
+          <select id="filterCond">
+            <option value="">Todas</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="filterTipo">Tipo</label>
+          <select id="filterTipo">
+            <option value="">Todos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <span id="shownCount" class="shown-count"></span>
+        <a id="exportBtn" class="btn btn-ghost btn-sm" download="inventario.csv">Descargar CSV</a>
+      </div>
+
+      <div class="table-wrap">
+        <table id="invTable" class="inv-table">
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Código Patrimonial</th>
+              <th>Denominación del Bien</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Cond</th>
+              <th>Marca / Modelo</th>
+              <th>Serie</th>
+              <th>N° Doc</th>
+              <th>Valor Adquisición</th>
+              <th>Valor Neto</th>
+              <th>Responsable</th>
+            </tr>
+          </thead>
+          <tbody id="invBody"></tbody>
+        </table>
+      </div>
+      <div id="invEmpty" class="empty" hidden>No hay bienes que coincidan con los filtros.</div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <p>INVENTARIOUGELCHURCAMPA &mdash; Datos locales, funciona sin conexión. Total de registros: <span id="totalRegs"></span></p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
