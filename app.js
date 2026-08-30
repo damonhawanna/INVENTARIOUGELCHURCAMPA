@@ -37,7 +37,39 @@
     el.colPanel = document.getElementById("colPanel");
     el.colList = document.getElementById("colList");
     el.invTable = document.getElementById("invTable");
+    el.installBtn = document.getElementById("installBtn");
   };
+
+  // ---------- Instalacion PWA ----------
+  var deferredPrompt = null;
+
+  function esAppInstalada() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+           (window.navigator && window.navigator.standalone === true);
+  }
+
+  function initInstalacion() {
+    if (esAppInstalada()) return; // ya instalada, no mostrar el boton
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (el.installBtn) el.installBtn.hidden = false;
+    });
+    window.addEventListener("appinstalled", function () {
+      deferredPrompt = null;
+      if (el.installBtn) el.installBtn.hidden = true;
+    });
+    if (el.installBtn) {
+      el.installBtn.addEventListener("click", function () {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function () {
+          deferredPrompt = null;
+          el.installBtn.hidden = true;
+        });
+      });
+    }
+  }
 
   var normalize = function (s) {
     return (s || "")
@@ -524,6 +556,7 @@
 
     cargarColsVisibles();
     renderColPanel();
+    initInstalacion();
     el.colBtn.addEventListener("click", function () {
       el.colPanel.hidden = !el.colPanel.hidden;
     });
