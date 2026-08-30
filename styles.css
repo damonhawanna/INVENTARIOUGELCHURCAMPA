@@ -264,3 +264,35 @@ footer {
   .header-inner { flex-direction: column; align-items: flex-start; }
   .search-row { flex-direction: column; }
 }
+
+/* Columnas ocultables */
+.toolbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.col-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.col-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+}
+.col-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.col-item input[type="checkbox"] {
+  width: 15px; height: 15px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.inv-table .col-hidden > td { display: none; }

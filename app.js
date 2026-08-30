@@ -33,6 +33,10 @@
     el.invEmpty = document.getElementById("invEmpty");
     el.exportBtn = document.getElementById("exportBtn");
     el.totalRegs = document.getElementById("totalRegs");
+    el.colBtn = document.getElementById("colBtn");
+    el.colPanel = document.getElementById("colPanel");
+    el.colList = document.getElementById("colList");
+    el.invTable = document.getElementById("invTable");
   };
 
   var normalize = function (s) {
@@ -173,30 +177,33 @@
 
     lista.forEach(function (r, i) {
       var tr = document.createElement("tr");
-      tr.appendChild(td(String(i + 1)));
-      tr.appendChild(td(r.cod || "—"));
-      tr.appendChild(td(r.bien || "—"));
-      tr.appendChild(td(r.tipo || "—"));
-      tr.appendChild(tdEstado(r.estado));
-      tr.appendChild(td(r.cond || "—"));
-      tr.appendChild(td((r.marca || "") + (r.modelo && r.modelo !== r.marca ? " / " + r.modelo : "")));
-      tr.appendChild(td(r.serie || "—"));
-      tr.appendChild(td(r.doc || "—"));
-      tr.appendChild(td(fmtMoneda(r.vadq)));
-      tr.appendChild(td(fmtMoneda(r.vneto)));
-      tr.appendChild(td(responsable(r)));
+      tr.appendChild(td(String(i + 1), "num"));
+      tr.appendChild(td(r.cod || "—", "cod"));
+      tr.appendChild(td(r.bien || "—", "bien"));
+      tr.appendChild(td(r.tipo || "—", "tipo"));
+      tr.appendChild(tdEstado(r.estado, "estado"));
+      tr.appendChild(td(r.cond || "—", "cond"));
+      tr.appendChild(td((r.marca || "") + (r.modelo && r.modelo !== r.marca ? " / " + r.modelo : ""), "marca"));
+      tr.appendChild(td(r.serie || "—", "serie"));
+      tr.appendChild(td(r.doc || "—", "doc"));
+      tr.appendChild(td(fmtMoneda(r.vadq), "vadq"));
+      tr.appendChild(td(fmtMoneda(r.vneto), "vneto"));
+      tr.appendChild(td(responsable(r), "resp"));
       el.invBody.appendChild(tr);
     });
+    aplicarVisibilidadColumnas();
   }
 
-  function td(texto) {
+  function td(texto, col) {
     var c = document.createElement("td");
     c.textContent = texto;
+    if (col) c.setAttribute("data-col", col);
     return c;
   }
 
-  function tdEstado(estado) {
+  function tdEstado(estado, col) {
     var c = document.createElement("td");
+    if (col) c.setAttribute("data-col", col);
     var map = { B: "Bueno", R: "Regular", N: "Nuevo/N" };
     if (estado) {
       var b = document.createElement("span");
@@ -248,6 +255,76 @@
     return /[";\n]/.test(v) ? '"' + v + '"' : v;
   }
 
+  var COLUMNAS = [
+    { key: "num", label: "N°" },
+    { key: "cod", label: "Código Patrimonial" },
+    { key: "bien", label: "Denominación del Bien" },
+    { key: "tipo", label: "Tipo" },
+    { key: "estado", label: "Estado" },
+    { key: "cond", label: "Condición" },
+    { key: "marca", label: "Marca / Modelo" },
+    { key: "serie", label: "Serie" },
+    { key: "doc", label: "N° Doc" },
+    { key: "vadq", label: "Valor Adquisición" },
+    { key: "vneto", label: "Valor Neto" },
+    { key: "resp", label: "Responsable" }
+  ];
+  var COL_STORAGE = "inc_cols_visibles";
+  var colsVisibles = null;
+
+  function cargarColsVisibles() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(COL_STORAGE));
+      if (saved && Array.isArray(saved) && saved.length) {
+        var validas = {};
+        COLUMNAS.forEach(function (c) { validas[c.key] = true; });
+        colsVisibles = saved.filter(function (k) { return validas[k]; });
+        return;
+      }
+    } catch (e) { /* ignorar */ }
+    colsVisibles = COLUMNAS.map(function (c) { return c.key; });
+  }
+
+  function guardarColsVisibles() {
+    try { localStorage.setItem(COL_STORAGE, JSON.stringify(colsVisibles)); } catch (e) { /* ignorar */ }
+  }
+
+  function colVisible(key) { return colsVisibles.indexOf(key) !== -1; }
+
+  function renderColPanel() {
+    el.colList.replaceChildren();
+    COLUMNAS.forEach(function (c) {
+      var label = document.createElement("label");
+      label.className = "col-item";
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = colVisible(c.key);
+      cb.addEventListener("change", function () {
+        if (cb.checked) { if (colsVisibles.indexOf(c.key) === -1) colsVisibles.push(c.key); }
+        else { colsVisibles = colsVisibles.filter(function (k) { return k !== c.key; }); }
+        guardarColsVisibles();
+        aplicarVisibilidadColumnas();
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(c.label));
+      el.colList.appendChild(label);
+    });
+  }
+
+  function aplicarVisibilidadColumnas() {
+    if (!el.invTable) return;
+    var ths = el.invTable.querySelectorAll("thead th[data-col]");
+    ths.forEach(function (th) {
+      var key = th.getAttribute("data-col");
+      var visible = colVisible(key);
+      th.style.display = visible ? "" : "none";
+      th.classList.toggle("col-hidden", !visible);
+      el.invTable.querySelectorAll("tbody td[data-col='" + key + "']").forEach(function (td) {
+        td.style.display = visible ? "" : "none";
+      });
+    });
+  }
+
   function volverInicio() {
     institucionSeleccionada = null;
     inventarioActual = [];
@@ -270,6 +347,12 @@
     }
     el.totalRegs.textContent = registros.length.toLocaleString("es-PE");
     el.loading.hidden = true;
+
+    cargarColsVisibles();
+    renderColPanel();
+    el.colBtn.addEventListener("click", function () {
+      el.colPanel.hidden = !el.colPanel.hidden;
+    });
 
     el.searchBtn.addEventListener("click", onSearch);
     el.searchInput.addEventListener("keydown", function (e) {

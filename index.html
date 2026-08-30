@@ -84,25 +84,32 @@
 
       <div class="toolbar">
         <span id="shownCount" class="shown-count"></span>
-        <a id="exportBtn" class="btn btn-ghost btn-sm" download="inventario.csv">Descargar CSV</a>
+        <div class="toolbar-actions">
+          <button id="colBtn" class="btn btn-ghost btn-sm" type="button">Columnas</button>
+          <a id="exportBtn" class="btn btn-ghost btn-sm" download="inventario.csv">Descargar CSV</a>
+        </div>
+      </div>
+
+      <div id="colPanel" class="col-panel" hidden>
+        <div id="colList" class="col-list"></div>
       </div>
 
       <div class="table-wrap">
         <table id="invTable" class="inv-table">
           <thead>
             <tr>
-              <th>N°</th>
-              <th>Código Patrimonial</th>
-              <th>Denominación del Bien</th>
-              <th>Tipo</th>
-              <th>Estado</th>
-              <th>Cond</th>
-              <th>Marca / Modelo</th>
-              <th>Serie</th>
-              <th>N° Doc</th>
-              <th>Valor Adquisición</th>
-              <th>Valor Neto</th>
-              <th>Responsable</th>
+              <th data-col="num">N°</th>
+              <th data-col="cod">Código Patrimonial</th>
+              <th data-col="bien">Denominación del Bien</th>
+              <th data-col="tipo">Tipo</th>
+              <th data-col="estado">Estado</th>
+              <th data-col="cond">Cond</th>
+              <th data-col="marca">Marca / Modelo</th>
+              <th data-col="serie">Serie</th>
+              <th data-col="doc">N° Doc</th>
+              <th data-col="vadq">Valor Adquisición</th>
+              <th data-col="vneto">Valor Neto</th>
+              <th data-col="resp">Responsable</th>
             </tr>
           </thead>
           <tbody id="invBody"></tbody>
