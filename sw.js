@@ -1,20 +1,18 @@
 /* Service Worker para INVENTARIOUGELCHURCAMPA - permite instalación y uso offline */
 "use strict";
 
-var CACHE_NAME = "inventario-ugel-churcampa-v2";
+var CACHE_NAME = "inventario-ugel-churcampa-v3";
 var CORE_URLS = [
   "./",
   "./index.html",
   "./upload.html",
   "./styles.css",
   "./app.js",
-  "./data.js",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
   "./logo.png",
-  "./logo ugel churcampa.png",
-  "https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"
+  "./logo ugel churcampa.png"
 ];
 
 self.addEventListener("install", function (event) {
@@ -48,18 +46,17 @@ self.addEventListener("fetch", function (event) {
   if (request.method !== "GET") return;
 
   event.respondWith(
-    caches.match(request).then(function (cached) {
-      if (cached) return cached;
-      return fetch(request).then(function (response) {
-        if (response && response.status === 200 && response.type === "basic") {
-          var clone = response.clone();
-          caches.open(CACHE_NAME).then(function (cache) {
-            cache.put(request, clone);
-          });
-        }
-        return response;
-      }).catch(function () {
-        return caches.match("./index.html");
+    fetch(request).then(function (response) {
+      if (response && response.status === 200) {
+        var clone = response.clone();
+        caches.open(CACHE_NAME).then(function (cache) {
+          cache.put(request, clone);
+        });
+      }
+      return response;
+    }).catch(function () {
+      return caches.match(request).then(function (cached) {
+        return cached || caches.match("./index.html");
       });
     })
   );
