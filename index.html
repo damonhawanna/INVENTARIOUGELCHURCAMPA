@@ -46,7 +46,7 @@
       <h2>Buscar institución educativa</h2>
       <div class="search-row">
         <input type="text" id="searchInput"
-               placeholder="Escribe el nombre, código o ubicación (ej: Churcampa, 35009, Milpo)&hellip;"
+               placeholder="Escribe nombre, código modular, código o ubicación (ej: Churcampa, 35009, 1609114, Milpo)&hellip;"
                autocomplete="off" spellcheck="false">
         <button id="searchBtn" class="btn btn-primary">Buscar</button>
       </div>
@@ -57,11 +57,12 @@
 
     <!-- Paso 2: inventario de la institucion seleccionada -->
     <section id="inventoryStep" class="card" hidden>
-      <div class="inv-header">
+       <div class="inv-header">
         <div>
           <button id="backBtn" class="btn btn-ghost">&larr; Nueva búsqueda</button>
           <h2 id="instTitle"></h2>
           <div id="instCat" class="inst-cat"></div>
+          <div id="instMeta" class="inst-meta-box" hidden></div>
         </div>
         <div id="instStats" class="inst-stats"></div>
       </div>
@@ -140,6 +141,7 @@
   </footer>
 
   <script src="data.js"></script>
+  <script src="instituciones.js"></script>
   <script src="app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {

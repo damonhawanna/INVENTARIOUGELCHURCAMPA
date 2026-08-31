@@ -14,12 +14,22 @@ La web es una *Progressive Web App*: puede instalarse en el dispositivo para usa
 
 ## Funcionalidades
 
-- Buscador de instituciones educativas (por nombre, código o ubicación).
-- Lista de instituciones coincidentes con la búsqueda.
+- Buscador de instituciones educativas (por nombre, **código modular**, código de institución o ubicación).
+- Lista de instituciones coincidentes con la búsqueda, mostrando código modular, distrito y nivel.
 - Inventario completo de la institución seleccionada.
 - Filtros por bien, estado (Bueno/Regular/Nuevo), condición y tipo.
 - Exportación a Excel (.xlsx) con los filtros aplicados.
 - Funciona sin conexión a internet una vez cargada.
+
+## Catálogo de instituciones
+
+La búsqueda utiliza además el padrón oficial de instituciones educativas de la UGEL Churcampa (`instituciones.js`, generado desde `p.xlsx`), que incluye **código modular**, código de institución, distrito, nivel/modalidad, dirección y coordenadas. Al seleccionar una institución se muestran estos datos y se enlazan con los bienes del inventario (SIGA).
+
+Para regenerar el catálogo:
+
+```bash
+python generar_instituciones.py "ruta/al/p.xlsx"
+```
 
 ## Archivos
 
@@ -29,11 +39,13 @@ La web es una *Progressive Web App*: puede instalarse en el dispositivo para usa
 | `styles.css` | Estilos |
 | `app.js` | Lógica del cliente |
 | `data.js` | Datos del inventario (48 995 registros, 267 instituciones) |
+| `instituciones.js` | Catálogo de IIEE del padrón (362 instituciones con código modular) |
 | `manifest.webmanifest` | Manifiesto PWA (nombre, tema, íconos) |
 | `sw.js` | Service worker (instalación y uso offline) |
 | `icon-192.png` / `icon-512.png` | Íconos de la app |
 | `logo.png` | Logo de la UGEL Churcampa |
 | `generar_datos.py` | Script para regenerar `data.js` desde el `.xls` |
+| `generar_instituciones.py` | Script para regenerar `instituciones.js` desde el `p.xlsx` |
 
 ## Regenerar datos desde el Excel
 

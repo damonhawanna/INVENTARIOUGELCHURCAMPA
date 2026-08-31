@@ -6,6 +6,7 @@
   var DB_VERSION = 1;
   var STORE_NAME = "dataStore";
   var DATA = window.INVENTARIOUGELCHURCAMPA || null;
+  var CATALOGO = window.CATALOGO_IIEE || null;
 
   var institucionSeleccionada = null;
   var inventarioActual = [];
@@ -43,37 +44,34 @@
   };
 
   function openDB() {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       var req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = function(e) {
+      req.onupgradeneeded = function (e) {
         var db = e.target.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME);
         }
       };
-      req.onsuccess = function(e) { resolve(e.target.result); };
-      req.onerror = function(e) { reject(e.target.error); };
+      req.onsuccess = function (e) { resolve(e.target.result); };
+      req.onerror = function (e) { reject(e.target.error); };
     });
   }
-
   function dbGet(key) {
-    return openDB().then(function(db) {
-      return new Promise(function(resolve, reject) {
+    return openDB().then(function (db) {
+      return new Promise(function (resolve, reject) {
         var tx = db.transaction(STORE_NAME, "readonly");
         var req = tx.objectStore(STORE_NAME).get(key);
-        req.onsuccess = function() { resolve(req.result); };
-        req.onerror = function(e) { reject(e.target.error); };
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function (e) { reject(e.target.error); };
       });
     });
   }
 
   var deferredPrompt = null;
-
   function esAppInstalada() {
     return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
            (window.navigator && window.navigator.standalone === true);
   }
-
   function initInstalacion() {
     if (esAppInstalada()) return;
     window.addEventListener("beforeinstallprompt", function (e) {
@@ -98,10 +96,7 @@
   }
 
   var normalize = function (s) {
-    return (s || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+    return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   };
 
   function fmtMoneda(v) {
@@ -111,12 +106,79 @@
     return "S/ " + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   }
 
+  // ------------------------------------------------------------------
+  // Capa de instituciones: combina catálogo oficial (p.xlsx) y áreas SIGA
+  // ------------------------------------------------------------------
+
+  // área Siga -> lista de códigos cortos contenidos en el nombre del área
+  var areaACodigoCorto = function (area) {
+    var nums = (area || "").match(/\d{3,}/g);
+    return nums || [];
+  };
+
+  // Para cada institución del catálogo, encontrar las áreas SIGA que la contienen (por código corto)
+  function construirDirectorios() {
+    // directorio de instituciones desplegables
+    var directorio = [];
+
+    if (CATALOGO && CATALOGO.instituciones) {
+      CATALOGO.instituciones.forEach(function (cat) {
+        directorio.push({
+          origen: "catalogo",
+          nombre: cat.nombre,
+          cat: cat.nivel || (cat.categoria || ""),
+          cod_inst: cat.cod_inst || "",
+          cod_mod: cat.cod_mod || "",
+          cod_corto: cat.cod_corto || "",
+          distrito: cat.distrito || "",
+          direccion: cat.direccion || "",
+          ubigeo: cat.ubigeo || "",
+          lat: cat.lat || "",
+          lon: cat.lon || "",
+          nivel: cat.nivel || "",
+          gestion: cat.gestion || "",
+          centrop: cat.c_poblado || "",
+          catInfo: cat
+        });
+      });
+    }
+
+    // instituciones derivadas de las áreas SIGA (para las que no están en el catálogo: SEDE, oficinas, etc.)
+    instituciones = instituciones || [];
+    instituciones.forEach(function (inst) {
+      directorio.push({
+        origen: "siga",
+        nombre: inst.nombre,
+        cat: inst.cat || "Instituci\u00f3n educativa"
+      });
+    });
+
+    return directorio;
+  }
+
+  var directorioInstituciones = [];
+
+  function esModularValido(v) {
+    return v && /^[0-9]{6,}$/.test(v);
+  }
+
   function buscarInstituciones(texto) {
     var q = normalize(texto).trim();
     if (!q) return [];
+
+    // si es código modular (7 dígitos), buscar por código modular del catálogo
+    if (esModularValido(texto.trim())) {
+      var porModular = directorioInstituciones.filter(function (d) {
+        return d.cod_mod === texto.trim() || (d.cod_inst === texto.trim());
+      });
+      if (porModular.length) return porModular;
+    }
+
     var terms = q.split(/\s+/).filter(Boolean);
-    return instituciones.filter(function (inst) {
-      var hay = normalize(inst.nombre);
+    return directorioInstituciones.filter(function (d) {
+      var hay = normalize(
+        [d.nombre, d.cod_inst, d.cod_mod, d.distrito, d.nivel, d.direccion].join(" ")
+      );
       return terms.every(function (t) { return hay.indexOf(t) !== -1; });
     });
   }
@@ -137,32 +199,122 @@
 
     lista.forEach(function (inst) {
       var li = document.createElement("li");
+      li.className = "inst-item";
+
+      var info = document.createElement("div");
+      info.className = "inst-info";
+
       var name = document.createElement("span");
       name.className = "inst-name";
       name.textContent = inst.nombre;
+
+      var meta = document.createElement("span");
+      meta.className = "inst-meta";
+      meta.textContent = metaDeInstitucion(inst);
+
+      info.appendChild(name);
+      info.appendChild(meta);
+
       var badge = document.createElement("span");
       badge.className = "inst-badge";
       badge.textContent = inst.cat || "";
-      li.appendChild(name);
+
+      li.appendChild(info);
       li.appendChild(badge);
       li.addEventListener("click", function () { seleccionarInstitucion(inst); });
       el.instList.appendChild(li);
     });
   }
 
+  function metaDeInstitucion(inst) {
+    var partes = [];
+    if (inst.cod_mod) partes.push("C\u00f3d. Modular: " + inst.cod_mod);
+    else if (inst.cod_inst) partes.push("C\u00f3d: " + inst.cod_inst);
+    if (inst.distrito) partes.push(inst.distrito);
+    if (inst.nivel) partes.push(inst.nivel);
+    if (inst.origen === "siga") partes.push("(SIGA)");
+    return partes.join(" \u2022 ");
+  }
+
+  // Encuentra las áreas SIGA correspondientes a un código corto (o a una institución del catálogo)
+  function areasSigaPara(inst) {
+    if (inst.origen === "siga") {
+      return [inst.nombre];
+    }
+    var codes = [inst.cod_corto, inst.cod_inst, inst.cod_mod].filter(Boolean);
+    var res = {};
+    registros.forEach(function (r) {
+      if (!r.area) return;
+      var nums = areaACodigoCorto(r.area);
+      var ok = false;
+      // coincidir si el número corto del catálogo está en el área, o si el área coincide por nombre
+      if (inst.cod_corto && nums.indexOf(inst.cod_corto) !== -1) ok = true;
+      if (!ok && inst.nombre) {
+        var areaN = normalize(r.area);
+        var nombreN = normalize(inst.nombre);
+        // extraer palabras significativas (>=4 letras) del nombre del catálogo y ver si están en el área
+        var words = nombreN.split(/\s+/).filter(function (w) {
+          return w.length >= 4 && !/^\d+$/.test(w);
+        });
+        if (words.length && words.every(function (w) { return areaN.indexOf(w) !== -1; })) ok = true;
+      }
+      if (ok) res[r.area] = true;
+    });
+    return Object.keys(res);
+  }
+
   function seleccionarInstitucion(inst) {
     institucionSeleccionada = inst;
-    inventarioActual = registros.filter(function (r) {
-      return r.area === inst.nombre;
-    });
+
+    var areas = areasSigaPara(inst);
+    var set = {};
+    areas.forEach(function (a) { set[a] = true; });
+
+    inventarioActual = registros.filter(function (r) { return set[r.area]; });
+
     el.searchStep.hidden = true;
     el.inventoryStep.hidden = false;
     el.instTitle.textContent = inst.nombre;
-    el.instCat.textContent = inst.cat || "Instituci\u00f3n educativa";
+    el.instCat.textContent = (inst.cat || "") + (inst.nivel ? " \u2022 " + inst.nivel : "");
+    renderMetaInstitucion();
     renderStats();
     buildTipoFilter();
     resetFilters();
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function renderMetaInstitucion() {
+    var holder = document.getElementById("instMeta");
+    if (!holder) return;
+    var inst = institucionSeleccionada;
+    var filas = [];
+    if (inst.cod_mod) filas.push(['C\u00f3digo Modular', inst.cod_mod]);
+    if (inst.cod_inst) filas.push(['C\u00f3digo Instituci\u00f3n', inst.cod_inst]);
+    if (inst.distrito) filas.push(['Distrito', inst.distrito]);
+    if (inst.direccion) filas.push(['Direcci\u00f3n', inst.direccion]);
+    if (inst.centrop) filas.push(['Centro Poblado', inst.centrop]);
+    if (inst.gestion) filas.push(['Gesti\u00f3n', inst.gestion]);
+    if (inst.ubigeo) filas.push(['Ubigeo', inst.ubigeo]);
+
+    if (!filas.length) {
+      holder.hidden = true;
+      return;
+    }
+    holder.hidden = false;
+    holder.innerHTML = "";
+    filas.forEach(function (f) {
+      var div = document.createElement("div");
+      div.className = "inst-meta-row";
+      var k = document.createElement("span");
+      k.className = "inst-meta-key";
+      k.textContent = f[0];
+      var v = document.createElement("span");
+      v.className = "inst-meta-val";
+      v.textContent = f[1];
+      div.appendChild(k);
+      div.appendChild(v);
+      holder.appendChild(div);
+    });
   }
 
   function renderStats() {
@@ -208,7 +360,6 @@
     var qEstado = el.filterEstado.value;
     var qCond = el.filterCond.value;
     var qTipo = el.filterTipo.value;
-
     var filtrados = inventarioActual.filter(function (r) {
       if (qBien && normalize(r.bien).indexOf(qBien) === -1) return false;
       if (qEstado && (r.estado || "") !== qEstado) return false;
@@ -216,7 +367,6 @@
       if (qTipo && (r.tipo || "") !== qTipo) return false;
       return true;
     });
-
     renderTabla(filtrados);
   }
 
@@ -257,7 +407,6 @@
     if (col) c.setAttribute("data-col", col);
     return c;
   }
-
   function tdEstado(estado, col) {
     var c = document.createElement("td");
     if (col) c.setAttribute("data-col", col);
@@ -272,22 +421,20 @@
     }
     return c;
   }
-
   function responsable(r) {
     var partes = [r.ap, r.am, r.nom].filter(Boolean);
     return partes.length ? partes.join(" ") : "\u2014";
   }
 
+  // ---------- Export ----------
   function xmlEsc(v) {
     return String(v == null ? "" : v)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
   }
-
   function exportarXLSX() {
     var filas = inventarioActual.filter(function (r) { return aplicarFiltroUnico(r); });
     var nombreArchivo = "inventario_" + (institucionSeleccionada.nombre.replace(/[^\w]+/g, "_")) + ".xlsx";
-
     var columnasDesc = [
       { h: "N\u00b0", v: function (r, i) { return i + 1; } },
       { h: "C\u00f3digo Patrimonial", v: function (r) { return r.cod; } },
@@ -305,7 +452,6 @@
       { h: "Color", v: function (r) { return r.color; } },
       { h: "Responsable", v: function (r) { return responsable(r); } }
     ];
-
     var filasExcel = [["UGEL CHURCAMPA - INVENTARIO PATRIMONIAL"]];
     filasExcel.push(["Instituci\u00f3n: " + institucionSeleccionada.nombre, "", "", "Total de bienes: " + filas.length]);
     filasExcel.push([]);
@@ -313,13 +459,11 @@
     filas.forEach(function (r, i) {
       filasExcel.push(columnasDesc.map(function (c) { return c.v(r, i); }));
     });
-
     var zip = crearXLSX(filasExcel);
     var blob = new Blob([zip], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     el.exportBtn.href = URL.createObjectURL(blob);
     el.exportBtn.download = nombreArchivo;
   }
-
   function numOrTexto(v) {
     if (!v) return "";
     var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
@@ -329,7 +473,16 @@
     var map = { B: "Bueno", R: "Regular", N: "Nuevo/N" };
     return e ? (map[e] || e) : "";
   }
+  function aplicarFiltroUnico(r) {
+    var qBien = normalize(el.filterBien.value).trim();
+    if (qBien && normalize(r.bien).indexOf(qBien) === -1) return false;
+    if (el.filterEstado.value && (r.estado || "") !== el.filterEstado.value) return false;
+    if (el.filterCond.value && (r.cond || "") !== el.filterCond.value) return false;
+    if (el.filterTipo.value && (r.tipo || "") !== el.filterTipo.value) return false;
+    return true;
+  }
 
+  // ---------- ZIP/XLSX ----------
   function crc32(bytes) {
     var table = crc32.table;
     if (!table) {
@@ -345,13 +498,8 @@
     return (crc ^ -1) >>> 0;
   }
   function u16(n) { return [n & 255, (n >> 8) & 255]; }
-  function u32(n) {
-    n >>>= 0;
-    return [n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >> 24) & 255];
-  }
-  function utf8(str) {
-    return new TextEncoder().encode(str);
-  }
+  function u32(n) { n >>>= 0; return [n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >> 24) & 255]; }
+  function utf8(str) { return new TextEncoder().encode(str); }
   function dosTime(date) {
     var d = date || new Date();
     return (((d.getFullYear() - 1980) & 0x7F) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
@@ -364,22 +512,18 @@
     var chunks = [];
     var central = [];
     var sizeAll = 0;
-
     entries.forEach(function (e) {
       var nameBytes = utf8(e.name);
       var data = e.data;
       var crc = crc32(data);
       var csize = data.length, usize = data.length;
-
       var lfh = u32(0x04034b50).concat(
         u16(20), u16(0), u16(0), u16(dosTime()), u16(dosDate()),
         u32(crc), u32(csize), u32(usize), u16(nameBytes.length), u16(0)
       );
       chunks.push(new Uint8Array(lfh.concat(Array.from(nameBytes), Array.from(data))));
-
       var offset = sizeAll;
       sizeAll += lfh.length + nameBytes.length + data.length;
-
       var cd = u32(0x02014b50).concat(
         u16(20), u16(20), u16(0), u16(0), u16(dosTime()), u16(dosDate()),
         u32(crc), u32(csize), u32(usize), u16(nameBytes.length), u16(0),
@@ -387,12 +531,10 @@
       );
       central.push(new Uint8Array(cd.concat(Array.from(nameBytes))));
     });
-
     var total = chunks.reduce(function (s, c) { return s + c.length; }, 0);
     var centralBytes = new Uint8Array(central.reduce(function (s, c) { return s + c.length; }, 0));
     var off = 0;
     central.forEach(function (c) { centralBytes.set(c, off); off += c.length; });
-
     var cdStart = total;
     var eocd = u32(0x06054b50).concat(
       u16(0), u16(0), u16(entries.length), u16(entries.length),
@@ -405,19 +547,16 @@
     out.set(new Uint8Array(eocd), off + centralBytes.length);
     return out;
   }
-
   function crearXLSX(filas) {
     var nrows = filas.length;
     var ncols = 0;
     filas.forEach(function (f) { if (f.length > ncols) ncols = f.length; });
-
     function colLetra(i) {
       var s = "";
       i += 1;
       while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); }
       return s;
     }
-
     var sheetRows = "";
     filas.forEach(function (row, ri) {
       sheetRows += '<row r="' + (ri + 1) + '">';
@@ -434,11 +573,9 @@
       }
       sheetRows += "</row>";
     });
-
     var sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
       '<sheetData>' + sheetRows + '</sheetData></worksheet>';
-
     var contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
@@ -446,22 +583,18 @@
       '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
       '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
       '</Types>';
-
     var rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
       '</Relationships>';
-
     var workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
       '</Relationships>';
-
     var workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
       'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
       '<sheets><sheet name="Inventario" sheetId="1" r:id="rId1"/></sheets></workbook>';
-
     var contentXml = {
       "[Content_Types].xml": contentTypes,
       "_rels/.rels": rels,
@@ -469,21 +602,12 @@
       "xl/workbook.xml": workbook,
       "xl/worksheets/sheet1.xml": sheetXml
     };
-
     var names = ["[Content_Types].xml", "_rels/.rels", "xl/_rels/workbook.xml.rels", "xl/workbook.xml", "xl/worksheets/sheet1.xml"];
     var entries = names.map(function (n) { return { name: n, data: utf8(contentXml[n]) }; });
     return crearZip(entries);
   }
 
-  function aplicarFiltroUnico(r) {
-    var qBien = normalize(el.filterBien.value).trim();
-    if (qBien && normalize(r.bien).indexOf(qBien) === -1) return false;
-    if (el.filterEstado.value && (r.estado || "") !== el.filterEstado.value) return false;
-    if (el.filterCond.value && (r.cond || "") !== el.filterCond.value) return false;
-    if (el.filterTipo.value && (r.tipo || "") !== el.filterTipo.value) return false;
-    return true;
-  }
-
+  // ---------- Columnas ----------
   var COLUMNAS = [
     { key: "num", label: "N\u00b0" },
     { key: "cod", label: "C\u00f3digo Patrimonial" },
@@ -500,7 +624,6 @@
   ];
   var COL_STORAGE = "inc_cols_visibles";
   var colsVisibles = null;
-
   function cargarColsVisibles() {
     try {
       var saved = JSON.parse(localStorage.getItem(COL_STORAGE));
@@ -513,13 +636,10 @@
     } catch (e) { }
     colsVisibles = COLUMNAS.map(function (c) { return c.key; });
   }
-
   function guardarColsVisibles() {
     try { localStorage.setItem(COL_STORAGE, JSON.stringify(colsVisibles)); } catch (e) { }
   }
-
   function colVisible(key) { return colsVisibles.indexOf(key) !== -1; }
-
   function renderColPanel() {
     el.colList.replaceChildren();
     COLUMNAS.forEach(function (c) {
@@ -539,7 +659,6 @@
       el.colList.appendChild(label);
     });
   }
-
   function aplicarVisibilidadColumnas() {
     if (!el.invTable) return;
     var ths = el.invTable.querySelectorAll("thead th[data-col]");
@@ -561,7 +680,6 @@
     el.searchStep.hidden = false;
     el.searchInput.focus();
   }
-
   function onSearch() {
     var lista = buscarInstituciones(el.searchInput.value);
     renderInstituciones(lista);
@@ -570,6 +688,9 @@
   function startApp() {
     el.totalRegs.textContent = registros.length.toLocaleString("es-PE");
     el.loading.hidden = true;
+
+    directorioInstituciones = construirDirectorios();
+
     cargarColsVisibles();
     renderColPanel();
     initInstalacion();
@@ -596,10 +717,10 @@
     dbGet("customData").then(function (custom) {
       if (custom && custom.registros && custom.registros.length) {
         registros = custom.registros;
-        instituciones = custom.instituciones;
+        instituciones = custom.instituciones || [];
       } else if (DATA) {
         registros = DATA.registros;
-        instituciones = DATA.instituciones;
+        instituciones = DATA.instituciones || [];
       } else {
         el.loading.textContent = "No se pudo cargar data.js";
         return;
@@ -608,7 +729,7 @@
     }).catch(function () {
       if (DATA) {
         registros = DATA.registros;
-        instituciones = DATA.instituciones;
+        instituciones = DATA.instituciones || [];
         startApp();
       } else {
         el.loading.textContent = "No se pudo cargar data.js";

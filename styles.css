@@ -167,6 +167,8 @@ body {
 .inst-list li:last-child { border-bottom: none; }
 .inst-list li:hover { background: var(--primary-light); }
 .inst-name { font-weight: 600; }
+.inst-info { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.inst-meta { font-size: 0.78rem; color: var(--muted); }
 .inst-badge {
   flex-shrink: 0;
   font-size: 0.7rem;
@@ -179,6 +181,21 @@ body {
   letter-spacing: 0.5px;
   border: 1px solid rgba(52,89,159,0.25);
 }
+
+.inst-meta-box {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.4rem 1rem;
+  background: #fafcfe;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  max-width: 620px;
+}
+.inst-meta-row { display: flex; gap: 0.4rem; font-size: 0.8rem; }
+.inst-meta-key { color: var(--muted); font-weight: 700; }
+.inst-meta-val { color: var(--text); }
 
 .empty {
   margin-top: 1rem;
