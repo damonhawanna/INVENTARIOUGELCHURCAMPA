@@ -2,21 +2,16 @@
 (function () {
   "use strict";
 
-  var DATA = null;
-  try {
-    var custom = localStorage.getItem("INVENTARIOUGELCHURCAMPA_CUSTOM");
-    if (custom) {
-      DATA = JSON.parse(custom);
-    }
-  } catch (e) { /* ignorar */ }
-  if (!DATA) DATA = window.INVENTARIOUGELCHURCAMPA || null;
-  var registros = DATA ? DATA.registros : [];
-  var instituciones = DATA ? DATA.instituciones : [];
+  var DB_NAME = "InventarioUGELDB";
+  var DB_VERSION = 1;
+  var STORE_NAME = "dataStore";
+  var DATA = window.INVENTARIOUGELCHURCAMPA || null;
 
   var institucionSeleccionada = null;
   var inventarioActual = [];
+  var registros = [];
+  var instituciones = [];
 
-  // Elementos
   var el = {};
   var load = function () {
     el.loading = document.getElementById("loading");
@@ -47,7 +42,31 @@
     el.installBtn = document.getElementById("installBtn");
   };
 
-  // ---------- Instalacion PWA ----------
+  function openDB() {
+    return new Promise(function(resolve, reject) {
+      var req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+      req.onsuccess = function(e) { resolve(e.target.result); };
+      req.onerror = function(e) { reject(e.target.error); };
+    });
+  }
+
+  function dbGet(key) {
+    return openDB().then(function(db) {
+      return new Promise(function(resolve, reject) {
+        var tx = db.transaction(STORE_NAME, "readonly");
+        var req = tx.objectStore(STORE_NAME).get(key);
+        req.onsuccess = function() { resolve(req.result); };
+        req.onerror = function(e) { reject(e.target.error); };
+      });
+    });
+  }
+
   var deferredPrompt = null;
 
   function esAppInstalada() {
@@ -56,7 +75,7 @@
   }
 
   function initInstalacion() {
-    if (esAppInstalada()) return; // ya instalada, no mostrar el boton
+    if (esAppInstalada()) return;
     window.addEventListener("beforeinstallprompt", function (e) {
       e.preventDefault();
       deferredPrompt = e;
@@ -86,7 +105,7 @@
   };
 
   function fmtMoneda(v) {
-    if (!v) return "—";
+    if (!v) return "\u2014";
     var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
     if (isNaN(n)) return v;
     return "S/ " + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -114,7 +133,7 @@
     el.instList.hidden = false;
     el.resultCount.hidden = false;
     el.resultCount.textContent =
-      lista.length + (lista.length === 1 ? " institución encontrada" : " instituciones encontradas");
+      lista.length + (lista.length === 1 ? " instituci\u00f3n encontrada" : " instituciones encontradas");
 
     lista.forEach(function (inst) {
       var li = document.createElement("li");
@@ -133,14 +152,13 @@
 
   function seleccionarInstitucion(inst) {
     institucionSeleccionada = inst;
-    // filtrar registros de esa institucion
     inventarioActual = registros.filter(function (r) {
       return r.area === inst.nombre;
     });
     el.searchStep.hidden = true;
     el.inventoryStep.hidden = false;
     el.instTitle.textContent = inst.nombre;
-    el.instCat.textContent = inst.cat || "Institución educativa";
+    el.instCat.textContent = inst.cat || "Instituci\u00f3n educativa";
     renderStats();
     buildTipoFilter();
     resetFilters();
@@ -217,14 +235,14 @@
     lista.forEach(function (r, i) {
       var tr = document.createElement("tr");
       tr.appendChild(td(String(i + 1), "num"));
-      tr.appendChild(td(r.cod || "—", "cod"));
-      tr.appendChild(td(r.bien || "—", "bien"));
-      tr.appendChild(td(r.tipo || "—", "tipo"));
+      tr.appendChild(td(r.cod || "\u2014", "cod"));
+      tr.appendChild(td(r.bien || "\u2014", "bien"));
+      tr.appendChild(td(r.tipo || "\u2014", "tipo"));
       tr.appendChild(tdEstado(r.estado, "estado"));
-      tr.appendChild(td(r.cond || "—", "cond"));
+      tr.appendChild(td(r.cond || "\u2014", "cond"));
       tr.appendChild(td((r.marca || "") + (r.modelo && r.modelo !== r.marca ? " / " + r.modelo : ""), "marca"));
-      tr.appendChild(td(r.serie || "—", "serie"));
-      tr.appendChild(td(r.doc || "—", "doc"));
+      tr.appendChild(td(r.serie || "\u2014", "serie"));
+      tr.appendChild(td(r.doc || "\u2014", "doc"));
       tr.appendChild(td(fmtMoneda(r.vadq), "vadq"));
       tr.appendChild(td(fmtMoneda(r.vneto), "vneto"));
       tr.appendChild(td(responsable(r), "resp"));
@@ -250,14 +268,14 @@
       b.textContent = map[estado] || estado;
       c.appendChild(b);
     } else {
-      c.textContent = "—";
+      c.textContent = "\u2014";
     }
     return c;
   }
 
   function responsable(r) {
     var partes = [r.ap, r.am, r.nom].filter(Boolean);
-    return partes.length ? partes.join(" ") : "—";
+    return partes.length ? partes.join(" ") : "\u2014";
   }
 
   function xmlEsc(v) {
@@ -271,16 +289,16 @@
     var nombreArchivo = "inventario_" + (institucionSeleccionada.nombre.replace(/[^\w]+/g, "_")) + ".xlsx";
 
     var columnasDesc = [
-      { h: "N°", v: function (r, i) { return i + 1; } },
-      { h: "Código Patrimonial", v: function (r) { return r.cod; } },
-      { h: "Denominación del Bien", v: function (r) { return r.bien; } },
+      { h: "N\u00b0", v: function (r, i) { return i + 1; } },
+      { h: "C\u00f3digo Patrimonial", v: function (r) { return r.cod; } },
+      { h: "Denominaci\u00f3n del Bien", v: function (r) { return r.bien; } },
       { h: "Tipo", v: function (r) { return r.tipo; } },
-      { h: "N° Doc Adquisición", v: function (r) { return r.doc; } },
-      { h: "Fecha Adquisición", v: function (r) { return r.fecha; } },
-      { h: "Valor Adquisición", v: function (r) { return numOrTexto(r.vadq); } },
+      { h: "N\u00b0 Doc Adquisici\u00f3n", v: function (r) { return r.doc; } },
+      { h: "Fecha Adquisici\u00f3n", v: function (r) { return r.fecha; } },
+      { h: "Valor Adquisici\u00f3n", v: function (r) { return numOrTexto(r.vadq); } },
       { h: "Valor Neto", v: function (r) { return numOrTexto(r.vneto); } },
       { h: "Estado", v: function (r) { return estadoTexto(r.estado); } },
-      { h: "Condición", v: function (r) { return r.cond; } },
+      { h: "Condici\u00f3n", v: function (r) { return r.cond; } },
       { h: "Marca", v: function (r) { return r.marca; } },
       { h: "Modelo", v: function (r) { return r.modelo; } },
       { h: "Serie", v: function (r) { return r.serie; } },
@@ -289,7 +307,7 @@
     ];
 
     var filasExcel = [["UGEL CHURCAMPA - INVENTARIO PATRIMONIAL"]];
-    filasExcel.push(["Institución: " + institucionSeleccionada.nombre, "", "", "Total de bienes: " + filas.length]);
+    filasExcel.push(["Instituci\u00f3n: " + institucionSeleccionada.nombre, "", "", "Total de bienes: " + filas.length]);
     filasExcel.push([]);
     filasExcel.push(columnasDesc.map(function (c) { return c.h; }));
     filas.forEach(function (r, i) {
@@ -312,7 +330,6 @@
     return e ? (map[e] || e) : "";
   }
 
-  // ---------- Generador de .xlsx (OOXML) en JS puro ----------
   function crc32(bytes) {
     var table = crc32.table;
     if (!table) {
@@ -347,9 +364,8 @@
     var chunks = [];
     var central = [];
     var sizeAll = 0;
-    var crc16 = null, crc32v = null;
 
-    entries.forEach(function (e, idx) {
+    entries.forEach(function (e) {
       var nameBytes = utf8(e.name);
       var data = e.data;
       var crc = crc32(data);
@@ -469,16 +485,16 @@
   }
 
   var COLUMNAS = [
-    { key: "num", label: "N°" },
-    { key: "cod", label: "Código Patrimonial" },
-    { key: "bien", label: "Denominación del Bien" },
+    { key: "num", label: "N\u00b0" },
+    { key: "cod", label: "C\u00f3digo Patrimonial" },
+    { key: "bien", label: "Denominaci\u00f3n del Bien" },
     { key: "tipo", label: "Tipo" },
     { key: "estado", label: "Estado" },
-    { key: "cond", label: "Condición" },
+    { key: "cond", label: "Condici\u00f3n" },
     { key: "marca", label: "Marca / Modelo" },
     { key: "serie", label: "Serie" },
-    { key: "doc", label: "N° Doc" },
-    { key: "vadq", label: "Valor Adquisición" },
+    { key: "doc", label: "N\u00b0 Doc" },
+    { key: "vadq", label: "Valor Adquisici\u00f3n" },
     { key: "vneto", label: "Valor Neto" },
     { key: "resp", label: "Responsable" }
   ];
@@ -494,12 +510,12 @@
         colsVisibles = saved.filter(function (k) { return validas[k]; });
         return;
       }
-    } catch (e) { /* ignorar */ }
+    } catch (e) { }
     colsVisibles = COLUMNAS.map(function (c) { return c.key; });
   }
 
   function guardarColsVisibles() {
-    try { localStorage.setItem(COL_STORAGE, JSON.stringify(colsVisibles)); } catch (e) { /* ignorar */ }
+    try { localStorage.setItem(COL_STORAGE, JSON.stringify(colsVisibles)); } catch (e) { }
   }
 
   function colVisible(key) { return colsVisibles.indexOf(key) !== -1; }
@@ -551,23 +567,15 @@
     renderInstituciones(lista);
   }
 
-  function init() {
-    load();
-    if (!DATA) {
-      el.loading.hidden = false;
-      el.loading.textContent = "No se pudo cargar data.js";
-      return;
-    }
+  function startApp() {
     el.totalRegs.textContent = registros.length.toLocaleString("es-PE");
     el.loading.hidden = true;
-
     cargarColsVisibles();
     renderColPanel();
     initInstalacion();
     el.colBtn.addEventListener("click", function () {
       el.colPanel.hidden = !el.colPanel.hidden;
     });
-
     el.searchBtn.addEventListener("click", onSearch);
     el.searchInput.addEventListener("keydown", function (e) {
       if (e.key === "Enter") onSearch();
@@ -578,6 +586,34 @@
     el.filterCond.addEventListener("change", aplicarFiltros);
     el.filterTipo.addEventListener("change", aplicarFiltros);
     el.exportBtn.addEventListener("click", exportarXLSX);
+  }
+
+  function init() {
+    load();
+    el.loading.hidden = false;
+    el.loading.textContent = "Cargando datos\u2026";
+
+    dbGet("customData").then(function (custom) {
+      if (custom && custom.registros && custom.registros.length) {
+        registros = custom.registros;
+        instituciones = custom.instituciones;
+      } else if (DATA) {
+        registros = DATA.registros;
+        instituciones = DATA.instituciones;
+      } else {
+        el.loading.textContent = "No se pudo cargar data.js";
+        return;
+      }
+      startApp();
+    }).catch(function () {
+      if (DATA) {
+        registros = DATA.registros;
+        instituciones = DATA.instituciones;
+        startApp();
+      } else {
+        el.loading.textContent = "No se pudo cargar data.js";
+      }
+    });
   }
 
   if (document.readyState === "loading") {

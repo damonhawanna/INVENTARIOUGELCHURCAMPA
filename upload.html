@@ -103,18 +103,10 @@
     (function() {
       "use strict";
 
-      var PASS_HASH = "c83ed8a3b5f8e1d2a4c6b0e3f5a7d9c1b4e6f8a2d5c7b9e1f3a6d8c0b2e4f6";
       var CORRECT_PASSWORD = "Inventarios@3mil";
-
-      function simpleHash(str) {
-        var hash = 0;
-        for (var i = 0; i < str.length; i++) {
-          var chr = str.charCodeAt(i);
-          hash = ((hash << 5) - hash) + chr;
-          hash |= 0;
-        }
-        return Math.abs(hash).toString(16).padStart(8, "0");
-      }
+      var DB_NAME = "InventarioUGELDB";
+      var DB_VERSION = 1;
+      var STORE_NAME = "dataStore";
 
       var authOverlay = document.getElementById("authOverlay");
       var authContent = document.getElementById("authContent");
@@ -152,6 +144,53 @@
       });
 
       checkAuth();
+
+      function openDB() {
+        return new Promise(function(resolve, reject) {
+          var req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME);
+            }
+          };
+          req.onsuccess = function(e) { resolve(e.target.result); };
+          req.onerror = function(e) { reject(e.target.error); };
+        });
+      }
+
+      function dbPut(key, value) {
+        return openDB().then(function(db) {
+          return new Promise(function(resolve, reject) {
+            var tx = db.transaction(STORE_NAME, "readwrite");
+            tx.objectStore(STORE_NAME).put(value, key);
+            tx.oncomplete = function() { resolve(); };
+            tx.onerror = function(e) { reject(e.target.error); };
+          });
+        });
+      }
+
+      function dbGet(key) {
+        return openDB().then(function(db) {
+          return new Promise(function(resolve, reject) {
+            var tx = db.transaction(STORE_NAME, "readonly");
+            var req = tx.objectStore(STORE_NAME).get(key);
+            req.onsuccess = function() { resolve(req.result); };
+            req.onerror = function(e) { reject(e.target.error); };
+          });
+        });
+      }
+
+      function dbDelete(key) {
+        return openDB().then(function(db) {
+          return new Promise(function(resolve, reject) {
+            var tx = db.transaction(STORE_NAME, "readwrite");
+            tx.objectStore(STORE_NAME)["delete"](key);
+            tx.oncomplete = function() { resolve(); };
+            tx.onerror = function(e) { reject(e.target.error); };
+          });
+        });
+      }
 
       function initUpload() {
         var SHEETS = ["SEDE", "CETPRO", "PRONOEI", "CEBE", "CEBA", "INICIAL", "PRIMARIA", "SECUNDARIA"];
@@ -302,22 +341,29 @@
               preview.hidden = false;
 
               confirmBtn.onclick = function() {
+                showStatus("Guardando datos...", "info");
+                confirmBtn.disabled = true;
+
                 var datos = { registros: todos, instituciones: instituciones };
-                try {
-                  localStorage.setItem("INVENTARIOUGELCHURCAMPA_CUSTOM", JSON.stringify(datos));
-                  localStorage.setItem("INVENTARIOUGELCHURCAMPA_DATE", new Date().toISOString());
+
+                Promise.all([
+                  dbPut("customData", datos),
+                  dbPut("customDate", new Date().toISOString())
+                ]).then(function() {
                   result.hidden = false;
                   result.className = "result-box result-success";
                   result.innerHTML =
                     "<h3>&#10004; Datos importados correctamente</h3>" +
                     "<p><strong>" + totalRegistros.toLocaleString("es-PE") + "</strong> registros de <strong>" + instituciones.length + "</strong> instituciones</p>" +
                     "<p>Los datos se actualizaron en tiempo real. <a href='index.html' style='color: var(--primary); font-weight: 700;'>Ver Inventario &rarr;</a></p>";
+                  confirmBtn.disabled = false;
                   showCurrentDataInfo();
-                } catch (err) {
+                }).catch(function(err) {
                   result.hidden = false;
                   result.className = "result-box result-error";
                   result.innerHTML = "<h3>Error al guardar</h3><p>" + err.message + "</p>";
-                }
+                  confirmBtn.disabled = false;
+                });
               };
             } catch (err) {
               hideProgress();
@@ -328,25 +374,31 @@
         }
 
         function showCurrentDataInfo() {
-          var custom = localStorage.getItem("INVENTARIOUGELCHURCAMPA_CUSTOM");
-          var date = localStorage.getItem("INVENTARIOUGELCHURCAMPA_DATE");
-          if (custom) {
-            var data = JSON.parse(custom);
-            currentDataInfo.innerHTML =
-              "<p style='color: var(--primary); font-weight: 700; margin-bottom: 0.5rem;'>&#128274; Base de datos personalizada activa</p>" +
-              "<p><strong>Registros:</strong> " + data.registros.length.toLocaleString("es-PE") + "</p>" +
-              "<p><strong>Instituciones:</strong> " + data.instituciones.length + "</p>" +
-              "<p><strong>Fecha de importación:</strong> " + (date ? new Date(date).toLocaleString("es-PE") : "N/A") + "</p>" +
-              "<button id='clearDataBtn' class='btn btn-ghost btn-sm' style='margin-top: 0.5rem; color: var(--danger); border-color: var(--danger);'>Restaurar datos originales</button>";
-            document.getElementById("clearDataBtn").onclick = function() {
-              localStorage.removeItem("INVENTARIOUGELCHURCAMPA_CUSTOM");
-              localStorage.removeItem("INVENTARIOUGELCHURCAMPA_DATE");
-              showCurrentDataInfo();
-              showStatus("Datos originales restaurados", "success");
-            };
-          } else {
+          dbGet("customData").then(function(custom) {
+            return dbGet("customDate").then(function(date) {
+              if (custom) {
+                currentDataInfo.innerHTML =
+                  "<p style='color: var(--primary); font-weight: 700; margin-bottom: 0.5rem;'>&#128274; Base de datos personalizada activa</p>" +
+                  "<p><strong>Registros:</strong> " + custom.registros.length.toLocaleString("es-PE") + "</p>" +
+                  "<p><strong>Instituciones:</strong> " + custom.instituciones.length + "</p>" +
+                  "<p><strong>Fecha de importación:</strong> " + (date ? new Date(date).toLocaleString("es-PE") : "N/A") + "</p>" +
+                  "<button id='clearDataBtn' class='btn btn-ghost btn-sm' style='margin-top: 0.5rem; color: var(--danger); border-color: var(--danger);'>Restaurar datos originales</button>";
+                document.getElementById("clearDataBtn").onclick = function() {
+                  Promise.all([
+                    dbDelete("customData"),
+                    dbDelete("customDate")
+                  ]).then(function() {
+                    showCurrentDataInfo();
+                    showStatus("Datos originales restaurados", "success");
+                  });
+                };
+              } else {
+                currentDataInfo.innerHTML = "<p style='color: var(--muted);'>Usando datos originales del proyecto (data.js)</p>";
+              }
+            });
+          }).catch(function() {
             currentDataInfo.innerHTML = "<p style='color: var(--muted);'>Usando datos originales del proyecto (data.js)</p>";
-          }
+          });
         }
 
         dropZone.addEventListener("click", function() { fileInput.click(); });
