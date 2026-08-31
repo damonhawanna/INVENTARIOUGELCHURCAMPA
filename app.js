@@ -433,6 +433,7 @@
       tr.appendChild(td(r.cod || "\u2014", "cod"));
       tr.appendChild(td(r.bien || "\u2014", "bien"));
       tr.appendChild(td(r.tipo || "\u2014", "tipo"));
+      tr.appendChild(td(claseSBN(r), "clasesbn"));
       tr.appendChild(tdEstado(r.estado, "estado"));
       tr.appendChild(td(r.cond || "\u2014", "cond"));
       tr.appendChild(td((r.marca || "") + (r.modelo && r.modelo !== r.marca ? " / " + r.modelo : ""), "marca"));
@@ -444,6 +445,27 @@
       el.invBody.appendChild(tr);
     });
     aplicarVisibilidadColumnas();
+  }
+
+  function normSBN(s) {
+    return String(s || "").toUpperCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  }
+  function infoSBN(r) {
+    var m = window.MAPEO_SBN;
+    if (!m || !m.mapeo) return null;
+    return m.mapeo[normSBN(r.bien)] || null;
+  }
+  function claseSBN(r) {
+    var info = infoSBN(r);
+    if (!info) return "\u2014";
+    var clase = info.clase || "";
+    return clase.replace(/^\d+\s*/, "");
+  }
+  function codigoSBN(r) {
+    var info = infoSBN(r);
+    return info ? info.codigo : "";
   }
 
   function td(texto, col) {
@@ -485,6 +507,8 @@
       { h: "C\u00f3digo Patrimonial", v: function (r) { return r.cod; } },
       { h: "Denominaci\u00f3n del Bien", v: function (r) { return r.bien; } },
       { h: "Tipo", v: function (r) { return r.tipo; } },
+      { h: "Clase SBN", v: function (r) { return claseSBN(r); } },
+      { h: "Cod. SBN", v: function (r) { return codigoSBN(r); } },
       { h: "N\u00b0 Doc Adquisici\u00f3n", v: function (r) { return r.doc; } },
       { h: "Fecha Adquisici\u00f3n", v: function (r) { return r.fecha; } },
       { h: "Valor Adquisici\u00f3n", v: function (r) { return numOrTexto(r.vadq); } },
@@ -658,6 +682,7 @@
     { key: "cod", label: "C\u00f3digo Patrimonial" },
     { key: "bien", label: "Denominaci\u00f3n del Bien" },
     { key: "tipo", label: "Tipo" },
+    { key: "clasesbn", label: "Clase SBN" },
     { key: "estado", label: "Estado" },
     { key: "cond", label: "Condici\u00f3n" },
     { key: "marca", label: "Marca / Modelo" },

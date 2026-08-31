@@ -19,6 +19,8 @@ La web es una *Progressive Web App*: puede instalarse en el dispositivo para usa
 - Inventario completo de la institución seleccionada.
 - Filtros por bien, estado (Bueno/Regular/Nuevo), condición y tipo.
 - Exportación a Excel (.xlsx) con los filtros aplicados.
+- Columna **"Clase SBN"** que muestra la clasificación oficial del catálogo SBN por cada bien.
+- Resumen global por tipo de bien (tarjetas de totales) y resumen desplegable por institución.
 - Funciona sin conexión a internet una vez cargada.
 
 ## Catálogo de instituciones
@@ -40,12 +42,16 @@ python generar_instituciones.py "ruta/al/p.xlsx"
 | `app.js` | Lógica del cliente |
 | `data.js` | Datos del inventario (48 995 registros, 267 instituciones) |
 | `instituciones.js` | Catálogo de IIEE del padrón (362 instituciones con código modular) |
+| `catalogo_sbn.js` | Catálogo oficial SBN de bienes (4 746 códigos, grupos y clases) |
+| `mapeo_sbn.js` | Mapeo denominación → código/clase SBN (354 denominaciones) |
 | `manifest.webmanifest` | Manifiesto PWA (nombre, tema, íconos) |
 | `sw.js` | Service worker (instalación y uso offline) |
 | `icon-192.png` / `icon-512.png` | Íconos de la app |
 | `logo.png` | Logo de la UGEL Churcampa |
 | `generar_datos.py` | Script para regenerar `data.js` desde el `.xls` |
 | `generar_instituciones.py` | Script para regenerar `instituciones.js` desde el `p.xlsx` |
+| `generar_catalogo_sbn.py` | Script para regenerar `catalogo_sbn.js` desde el `Inventario SBN.xlsm` |
+| `generar_mapeo_sbn.py` | Script para regenerar `mapeo_sbn.js` (denominación → SBN) |
 
 ## Regenerar datos desde el Excel
 
