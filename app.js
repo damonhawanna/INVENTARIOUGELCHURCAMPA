@@ -121,6 +121,14 @@
     // directorio de instituciones desplegables
     var directorio = [];
 
+    // Sede principal de la UGEL (agrupa todas las oficinas)
+    directorio.push({
+      origen: "sede",
+      nombre: "SEDE / UGEL CHURCAMPA",
+      cat: "SEDE / UGEL",
+      nivel: "Oficinas de la sede (Direcci\u00f3n, Administraci\u00f3n, etc.)"
+    });
+
     if (CATALOGO && CATALOGO.instituciones) {
       CATALOGO.instituciones.forEach(function (cat) {
         directorio.push({
@@ -238,6 +246,14 @@
 
   // Encuentra las áreas SIGA correspondientes a un código corto (o a una institución del catálogo)
   function areasSigaPara(inst) {
+    if (inst.origen === "sede") {
+      // todas las oficinas de la sede
+      var set = {};
+      registros.forEach(function (r) {
+        if (r.cat === "SEDE / UGEL" && r.area) set[r.area] = true;
+      });
+      return Object.keys(set);
+    }
     if (inst.origen === "siga") {
       return [inst.nombre];
     }
