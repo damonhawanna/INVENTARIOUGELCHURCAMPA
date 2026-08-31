@@ -8,3 +8,6 @@ __pycache__/
 # Datos fuente originales (no publicar el .xls)
 *.xls
 *.xlsx
+
+# Respaldo de data.js generado (no publicar, ocupa mucho)
+data_backup_*.js
