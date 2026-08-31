@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Materiales y Formatos - INVENTARIOUGELCHURCAMPA</title>
+  <meta name="description" content="Materiales, formatos y normativa para el control de inventario 2026 de los directores de la UGEL Churcampa.">
+  <meta name="theme-color" content="#34599f">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .mat-page { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+    .mat-head { margin-bottom: 1.5rem; }
+    .mat-head h2 { color: var(--primary-dark); margin: 0 0 0.25rem; }
+    .mat-head p { color: var(--muted); margin: 0; }
+    section.mat-sec { margin-bottom: 1.5rem; }
+    .mat-sec > h3 { display: flex; align-items: center; gap: 0.5rem; color: var(--primary-dark);
+      border-bottom: 3px solid var(--primary-light); padding-bottom: 0.4rem; margin: 0 0 0.9rem; font-size: 1.1rem; }
+    .mat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.75rem; }
+    .mat-card { border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 0.85rem;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 0.6rem; background: #fff; }
+    .mat-card .mat-name { font-size: 0.86rem; font-weight: 600; color: var(--text); line-height: 1.25; }
+    .mat-card .mat-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .ext { font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; color: #fff; letter-spacing: 0.5px; }
+    .ext-doc { background: #2b579a; } .ext-xls { background: #217346; } .ext-pdf { background: #d93025; } .ext-ppt { background: #c43e1c; }
+    .mat-desc { font-size: 0.75rem; color: var(--muted); }
+    .videos { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+    .video-box { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
+    .video-box .video-title { padding: 0.6rem 0.85rem; font-weight: 700; font-size: 0.9rem; color: var(--primary-dark); }
+    .video-box iframe { width: 100%; aspect-ratio: 16/9; border: 0; display: block; }
+    .aviso { background: var(--primary-light); color: var(--primary-dark); border-radius: 10px; padding: 0.75rem 1rem;
+      font-size: 0.85rem; margin-bottom: 1.25rem; border-left: 4px solid var(--primary); }
+    .gen-link { display: inline-block; margin-top: 0.4rem; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="logo.png" alt="Logo UGEL Churcampa" class="brand-logo">
+        <div>
+          <h1>MATERIALES <span class="accent">&amp;</span> FORMATOS</h1>
+          <p class="subtitle">Control de Inventario 2026 de la UGEL Churcampa</p>
+        </div>
+      </div>
+      <a href="index.html" class="btn btn-ghost" style="color: #fff; border-color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.85rem;">
+        &#8592; Volver al Inicio
+      </a>
+    </div>
+  </header>
+
+  <main class="mat-page">
+    <div class="mat-head">
+      <h2>Material para directores</h2>
+      <p>Normativa, videos instructivos y todos los formatos oficiales para el control e inventario patrimonial 2026.</p>
+    </div>
+
+    <div class="aviso">
+      &#128196; Todos los formatos se descargan en su archivo original (Word o Excel). Para los formatos de
+      <strong>Alta</strong> y <strong>Baja</strong> también puedes usar el <strong>Generador web</strong>, que te los
+      llena automáticamente con los datos de tu institución.
+    </div>
+
+    <!-- VIDEOS -->
+    <section class="mat-sec" id="seccion-videos">
+      <h3>&#127909; Videos instructivos</h3>
+      <div class="videos" id="videosGrid"></div>
+    </section>
+
+    <!-- NORMATIVA -->
+    <section class="mat-sec" id="seccion-normativa">
+      <h3>&#128214; Normativa y guía</h3>
+      <div class="mat-grid" id="grid-normativa"></div>
+    </section>
+
+    <!-- ALTA -->
+    <section class="mat-sec" id="seccion-alta">
+      <h3>&#10133; Alta de bienes</h3>
+      <a class="gen-link resumen-sub" href="formulario.html">&#8594; ¿Tienes bienes por dar de alta? Usa el <strong>Generador de formularios</strong></a>
+      <div class="mat-grid" id="grid-alta"></div>
+    </section>
+
+    <!-- BAJA -->
+    <section class="mat-sec" id="seccion-baja">
+      <h3>&#10134; Baja de bienes</h3>
+      <a class="gen-link resumen-sub" href="formulario.html">&#8594; ¿Tienes bienes por dar de baja? Usa el <strong>Generador de formularios</strong></a>
+      <div class="mat-grid" id="grid-baja"></div>
+    </section>
+
+    <!-- BAJA AUXILIARES -->
+    <section class="mat-sec" id="seccion-baux">
+      <h3>&#10134; Baja de bienes auxiliares</h3>
+      <div class="mat-grid" id="grid-baux"></div>
+    </section>
+
+    <!-- BIENES CULTURALES -->
+    <section class="mat-sec" id="seccion-cult">
+      <h3>&#127963; Bienes culturales</h3>
+      <div class="mat-grid" id="grid-cult"></div>
+    </section>
+
+    <!-- DONACION -->
+    <section class="mat-sec" id="seccion-don">
+      <h3>&#127973; Donación de bienes auxiliares</h3>
+      <div class="mat-grid" id="grid-don"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>INVENTARIOUGELCHURCAMPA &mdash; Materiales y formatos para el control de inventario 2026</p>
+  </footer>
+
+  <script>
+    // ============================================================
+    // VIDEOS DE YOUTUBE (no listados)
+    // Sube los 2 videos a YouTube y pega aqui su ID (la parte
+    // despues de "watch?v=" en la URL).
+    // ============================================================
+    var YOUTUBE_INVENTARIO_ID = ""; // Video "Directiva Inventario 2026"
+    var YOUTUBE_LAPTOP_ID = "";     // Video "Ciclo de Vida Laptop Escolar"
+
+    var ARCHIVOS = {
+      normativa: [
+        { n: "Directiva 006-2021-EF (SBN)", r: "materiales/normativa/Directiva 006-2021-EF.pdf" },
+        { n: "Presentación - Inventario 2026", r: "materiales/normativa/Inventario 2026.pptx" },
+        { n: "Valores de la UIT 2026", r: "materiales/normativa/UIT.xlsx" },
+        { n: "Acta de compromiso", r: "materiales/normativa/Acta de compromiso.docx" },
+        { n: "Acta de compromiso a director", r: "materiales/normativa/Acta de Compromiso a director.docx" }
+      ],
+      alta: [
+        { n: "00 Oficio de remisión del Inventario", r: "materiales/alta/00 Oficio de remisión del Inventario.docx" },
+        { n: "01 RD Conformación de Toma de Inventario", r: "materiales/alta/01 RD Conformación de Toma de Inventario.doc" },
+        { n: "02 Acta de Toma de Inventario Inicio y Final", r: "materiales/alta/02 Acta de Toma de Inventario Inicio y Final.docx" },
+        { n: "03 Cronograma de Actividades", r: "materiales/alta/03 Cronograma de Actividades.xls" },
+        { n: "04 Captación de datos", r: "materiales/alta/04 Captación de datos.xlsx" },
+        { n: "05 Acta de entrega del bien a la I.E.", r: "materiales/alta/05 Acta de entrega del bien a la I.E..doc" },
+        { n: "06 Declaración Jurada de Bienes Muebles", r: "materiales/alta/06 Declaración Jurada de Bienes Muebles.doc" },
+        { n: "07 Informe Técnico de Alta", r: "materiales/alta/07 Informe Técnico de Alta.doc" },
+        { n: "08 Informe Final de Toma de Inventario", r: "materiales/alta/08 Informe Final de Toma de Inventario.doc" },
+        { n: "09 Relación de bienes", r: "materiales/alta/09 Relacion de bienes.xls" },
+        { n: "Acta de compromiso", r: "materiales/alta/Acta de compromiso.docx" }
+      ],
+      baja: [
+        { n: "00 Oficio de remisión del Inventario", r: "materiales/baja/00 Oficio de remisión del Inventario.docx" },
+        { n: "01 Relación de bienes a dar de baja", r: "materiales/baja/01 Relacion de bienes a dar de baja.xls" },
+        { n: "02 Declaración Jurada de Bienes Muebles", r: "materiales/baja/02 Declaración Jurada de Bienes Muebles.doc" },
+        { n: "03 Informe del Usuario", r: "materiales/baja/03 Informe del Usuario.docx" },
+        { n: "04 Anexo 17-A (Muebles y Enseres)", r: "materiales/baja/04 17-A Muebles y Enseres.xls" },
+        { n: "04.1 Tasación de muebles y Enseres", r: "materiales/baja/04.1 Tasación de muebles y Enseres.doc" },
+        { n: "05 Anexo 17-B (Maquinaria y Equipo)", r: "materiales/baja/05 17-B Maquinaria y Equipo.xls" },
+        { n: "05.1 Tasación de maquinaria, equipos y vehículos", r: "materiales/baja/05.1 Tasación de maquinaria, equipos y vehiculos.doc" },
+        { n: "06 Informe Técnico de Baja", r: "materiales/baja/06 Informe Técnico de Baja.doc" },
+        { n: "07 Informe Técnico de baja", r: "materiales/baja/07 Informe Técnico de baja.docx" },
+        { n: "08 Informe Final de Toma de Inventario", r: "materiales/baja/08 Informe Final de Toma de Inventario.doc" },
+        { n: "09 Acta de aprobación de baja de bienes", r: "materiales/baja/09 Acta aprobacion baja de bienes.docx" }
+      ],
+      baux: [
+        { n: "Anexo N° 40-A (baja de bienes auxiliares)", r: "materiales/baja-auxiliares/ANEXO N° 40-A.xls" },
+        { n: "Modelo de Acta", r: "materiales/baja-auxiliares/MODELO DE ACTA.doc" },
+        { n: "Modelo de Informe Técnico de Baja de Bienes Auxiliares", r: "materiales/baja-auxiliares/MODELO DE INFORME TECNICO DE BAJA DE BIENES AUXILIARES.doc" },
+        { n: "Modelo de Resolución de Baja de Bienes Auxiliares", r: "materiales/baja-auxiliares/MODELO DE RESOLUCION DE BAJA DE BIENES AUXILIAR.doc" }
+      ],
+      cult: [
+        { n: "Anexo 48-A (bienes culturales)", r: "materiales/bienes-culturales/ANEXO 48/ANEXO N°48-A.xls" },
+        { n: "Informe Técnico de Saneamiento de Bienes Culturales", r: "materiales/bienes-culturales/ANEXO 48/MODELO DE INFORME TECNICO DE SANEAMIENTO DE BIENES CULTURALES.doc" },
+        { n: "Anexo 49-A (bienes culturales)", r: "materiales/bienes-culturales/ANEXO 49/ANEXO N°48-A.xls" },
+        { n: "Resolución (bienes culturales)", r: "materiales/bienes-culturales/ANEXO 49/resol.doc" }
+      ],
+      don: [
+        { n: "Anexo N° 42-A (donación de bienes auxiliares)", r: "materiales/donacion/ANEXO N° 42-A.xls" },
+        { n: "Modelo de Informe de Donación de Bienes Auxiliares", r: "materiales/donacion/MODELO DE INFORME DE DONACION DE BIENES AUXILIARES.doc" }
+      ]
+    };
+
+    function badgeExt(ruta) {
+      var ext = (ruta.split(".").pop() || "").toLowerCase();
+      var map = { doc: "doc", docx: "docx", xls: "xls", xlsx: "xlsx", pdf: "pdf", pptx: "pptx" };
+      var cls = { doc: "ext-doc", docx: "ext-doc", xls: "ext-xls", xlsx: "ext-xls", pdf: "ext-pdf", pptx: "ext-ppt" };
+      return '<span class="ext ' + (cls[ext] || "ext-doc") + '">' + (map[ext] || ext) + "</span>";
+    }
+
+    function renderGrid(idGrid, seccion) {
+      var grid = document.getElementById(idGrid);
+      if (!grid) return;
+      (ARCHIVOS[seccion] || []).forEach(function (a) {
+        var url = encodeURI(a.r);
+        var card = document.createElement("div");
+        card.className = "mat-card";
+        card.innerHTML =
+          '<div class="mat-name">' + a.n + "</div>" +
+          '<div class="mat-row">' +
+            badgeExt(a.r) +
+            '<a class="btn btn-ghost btn-sm" href="' + url + '" download style="margin:0;">&#11015; Descargar</a>' +
+          "</div>";
+        grid.appendChild(card);
+      });
+    }
+
+    function renderVideos() {
+      var grid = document.getElementById("videosGrid");
+      if (!grid) return;
+      var vids = [
+        { id: YOUTUBE_INVENTARIO_ID, t: "Directiva Inventario 2026" },
+        { id: YOUTUBE_LAPTOP_ID, t: "Ciclo de Vida - Laptop Escolar" }
+      ];
+      vids.forEach(function (v) {
+        var box = document.createElement("div");
+        box.className = "video-box";
+        if (v.id) {
+          box.innerHTML =
+            '<div class="video-title">' + v.t + "</div>" +
+            '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(v.id) + '?rel=0" title="' + v.t +
+            '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+        } else {
+          box.innerHTML =
+            '<div class="video-title">' + v.t + "</div>" +
+            '<div style="padding:1rem;color:var(--muted);font-size:0.85rem;">&#9888; Video pendiente de publicar en YouTube.<br>' +
+            'Pega el ID del video en <code>YOUTUBE_' + (v.t.indexOf("2026") >= 0 ? "INVENTARIO" : "LAPTOP") +
+            '_ID</code> dentro de <code>materiales.html</code>.</div>';
+        }
+        grid.appendChild(box);
+      });
+    }
+
+    renderVideos();
+    renderGrid("grid-normativa", "normativa");
+    renderGrid("grid-alta", "alta");
+    renderGrid("grid-baja", "baja");
+    renderGrid("grid-baux", "baux");
+    renderGrid("grid-cult", "cult");
+    renderGrid("grid-don", "don");
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
