@@ -47,8 +47,13 @@
         <h2>Resumen global del inventario</h2>
         <span id="resumenTotal" class="resumen-total"></span>
       </div>
-      <p class="resumen-sub">Bienes registrados en todas las instituciones por categoría.</p>
-      <div id="resumenCards" class="resumen-cards"></div>
+      <details id="resumenBlock" class="ie-resumen-block">
+        <summary class="ie-resumen-head">
+          <h3>Resumen por tipo de bien</h3>
+          <span class="ie-resumen-hint">Ver detalle</span>
+        </summary>
+        <div id="resumenCards" class="resumen-cards"></div>
+      </details>
     </section>
 
     <!-- Paso 1: busqueda de institucion -->
