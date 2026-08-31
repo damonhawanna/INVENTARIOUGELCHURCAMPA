@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Formularios - INVENTARIOUGELCHURCAMPA</title>
+  <meta name="theme-color" content="#34599f">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <style>
+    .form-page { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+    .f-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem; }
+    .f-field { display: flex; flex-direction: column; gap: 0.25rem; }
+    .f-field label { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+    .f-field input, .f-field select, .f-field textarea {
+      padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.9rem; font-family: inherit; background: #fff; color: var(--text);
+    }
+    .f-field input:focus, .f-field select:focus { outline: none; border-color: var(--primary); }
+    .bienes-head { display: flex; align-items: center; justify-content: space-between; margin: 1rem 0 0.5rem; gap: 1rem; flex-wrap: wrap; }
+    .bienes-table-wrap { overflow-x: auto; }
+    table.bienes-table { width: 100%; border-collapse: collapse; min-width: 1700px; }
+    .bienes-table th { background: var(--primary); color: #fff; padding: 0.45rem 0.5rem; font-size: 0.72rem; text-align: left; white-space: nowrap; position: sticky; top: 0; }
+    .bienes-table td { padding: 0.3rem 0.35rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .bienes-table input { width: 100%; padding: 0.35rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.8rem; font-family: inherit; }
+    .bienes-table td.btn-col { width: 40px; text-align: center; }
+    .btn-rem { background: var(--danger); color: #fff; border: none; border-radius: 6px; cursor: pointer; width: 26px; height: 26px; font-size: 1rem; line-height: 1; }
+    .btn-add { border: 1px dashed var(--primary); color: var(--primary); background: var(--primary-light); padding: 0.45rem 0.9rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .acciones { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    .result-box { margin-top: 1rem; }
+    .ucd { display: block; font-size: 0.68rem; color: #9aa4b2; margin-top: 0.15rem; }
+    .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; transition: background 0.2s; }
+    .drop-zone.drag-over { background: var(--primary-light); border-color: var(--primary); }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="logo.png" alt="Logo UGEL Churcampa" class="brand-logo">
+        <div>
+          <h1>GENERADOR <span class="accent">DE</span> FORMULARIOS</h1>
+          <p class="subtitle">Alta de bienes patrimoniales</p>
+        </div>
+      </div>
+      <a href="index.html" class="btn btn-ghost" style="color: #fff; border-color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.85rem;">
+        &#8592; Volver al Inicio
+      </a>
+    </div>
+  </header>
+
+  <main class="form-page">
+    <section class="card">
+      <h2>1. Institución Educativa</h2>
+      <p class="resumen-sub">Selecciona la institución o escribe su código modular para autocompletar sus datos.</p>
+
+      <div class="f-row">
+        <div class="f-field" style="flex: 2;">
+          <label for="ieSelect">Institución Educativa (del catálogo)</label>
+          <select id="ieSelect"></select>
+        </div>
+        <div class="f-field">
+          <label for="ieCodMod">Código Modular</label>
+          <input type="text" id="ieCodMod" placeholder="Ej: 1609114">
+        </div>
+      </div>
+      <div class="f-row">
+        <div class="f-field" style="flex: 3;"><label>Nombre de la IE</label><input type="text" id="ieNombre" placeholder="Nombre de la institución"></div>
+        <div class="f-field"><label>Distrito</label><input type="text" id="ieDistrito"></div>
+        <div class="f-field"><label>Provincia</label><input type="text" id="ieProvincia"></div>
+      </div>
+      <div class="f-row">
+        <div class="f-field" style="flex: 3;"><label>Dirección</label><input type="text" id="ieDireccion"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Datos del Director / Responsable</h2>
+      <div class="f-row">
+        <div class="f-field" style="flex: 2;"><label>Apellidos y Nombres</label><input type="text" id="dirNombre"></div>
+        <div class="f-field"><label>N° DNI</label><input type="text" id="dirDni"></div>
+        <div class="f-field"><label>N° Teléfono / Celular</label><input type="text" id="dirTel"></div>
+        <div class="f-field" style="flex: 2;"><label>Correo Electrónico</label><input type="text" id="dirEmail"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="bienes-head">
+        <h2 style="margin:0;">3. Bienes a dar de ALTA</h2>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <label id="importLabel" class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">&#128194; Importar Excel</label>
+          <input type="file" id="importFile" accept=".xls,.xlsx,csv" hidden>
+          <button id="addRowBtn" class="btn-add" type="button">+ Agregar bien</button>
+        </div>
+      </div>
+
+      <div id="dropZone" class="drop-zone" style="margin-bottom:0.75rem;">
+        <p style="margin:0;">&#128194; Arrastra aquí tu Excel con los bienes, o usa el botón "Importar Excel"</p>
+      </div>
+
+      <div class="bienes-table-wrap">
+        <table class="bienes-table" id="bienesTable">
+          <thead>
+            <tr>
+              <th>N°</th>
+              <th>Código Patrimonial</th>
+              <th>Denominación del Bien</th>
+              <th>Marca</th>
+              <th>Modelo</th>
+              <th>Tipo</th>
+              <th>Color</th>
+              <th>Serie / Dimensiones</th>
+              <th>Estado</th>
+              <th>Valor Costo (S/)</th>
+              <th>Cant.</th>
+              <th>Valor Total (S/)</th>
+              <th>Causal / Motivo de Alta</th>
+              <th>Observaciones</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="bienesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="acciones">
+      <button id="genCaptacion" class="btn btn-primary">&#11015; Descargar Captación de Datos (.xlsx)</button>
+      <button id="genRelacion" class="btn btn-primary">&#11015; Descargar Relación de Bienes (.xlsx)</button>
+      <button id="genAmbos" class="btn btn-ghost">Generar ambos</button>
+    </div>
+    <div id="result" class="result-box" hidden></div>
+  </main>
+
+  <footer class="app-footer">
+    <p>INVENTARIOUGELCHURCAMPA &mdash; Generador de formularios de Alta de bienes</p>
+  </footer>
+
+  <script src="instituciones.js"></script>
+  <script src="formulario.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("sw.js").catch(function (err) {
+          console.error("Error al registrar el service worker:", err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
