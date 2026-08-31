@@ -319,6 +319,7 @@
     el.instCat.textContent = (inst.cat || "") + (inst.nivel ? " \u2022 " + inst.nivel : "");
     renderMetaInstitucion();
     renderStats();
+    renderResumenIE();
     buildTipoFilter();
     resetFilters();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -762,12 +763,12 @@
     return null;
   }
 
-  function computarResumen() {
+  function computarResumen(listaRegistros) {
+    listaRegistros = listaRegistros || registros;
     var totales = {};
-    var contadorCat = {};
     CATEGORIAS.forEach(function (c) { totales[c.id] = 0; });
     var otros = 0;
-    registros.forEach(function (r) {
+    listaRegistros.forEach(function (r) {
       var b = r.bien || "";
       var cat = categoriaDeBien(b);
       if (cat) totales[cat.id]++;
@@ -780,16 +781,13 @@
     if (otros > 0) {
       lista.push({ id: "otros", label: "Otros", count: otros, color: "#bdbdbd" });
     }
-    return { lista: lista, total: registros.length };
+    return { lista: lista, total: listaRegistros.length };
   }
 
-  function renderResumenGlobal() {
-    if (!el.resumenCards || !registros || !registros.length) return;
-    var res = computarResumen();
-    el.resumenTotal.textContent = res.total.toLocaleString("es-PE") + " bienes en total";
-
-    el.resumenCards.replaceChildren();
-    res.lista.forEach(function (cat) {
+  function renderTarjetas(cardsEl, lista) {
+    if (!cardsEl) return;
+    cardsEl.replaceChildren();
+    lista.forEach(function (cat) {
       var card = document.createElement("div");
       card.className = "resumen-card";
       card.style.borderTopColor = cat.color;
@@ -802,15 +800,13 @@
       lab.textContent = cat.label;
       card.appendChild(num);
       card.appendChild(lab);
-      el.resumenCards.appendChild(card);
+      cardsEl.appendChild(card);
     });
-
-    renderBarChart(res.lista);
   }
 
-  function renderBarChart(lista) {
-    if (!el.resumenChart) return;
-    el.resumenChart.replaceChildren();
+  function renderBarChartEn(chartEl, lista) {
+    if (!chartEl) return;
+    chartEl.replaceChildren();
     if (!lista.length) return;
     var max = lista[0].count;
     lista.forEach(function (cat) {
@@ -833,8 +829,31 @@
       row.appendChild(lab);
       row.appendChild(barWrap);
       row.appendChild(val);
-      el.resumenChart.appendChild(row);
+      chartEl.appendChild(row);
     });
+  }
+
+  function renderResumenGlobal() {
+    if (!el.resumenCards || !registros || !registros.length) return;
+    var res = computarResumen(registros);
+    el.resumenTotal.textContent = res.total.toLocaleString("es-PE") + " bienes en total";
+    renderTarjetas(el.resumenCards, res.lista);
+    renderBarChartEn(el.resumenChart, res.lista);
+  }
+
+  function renderResumenIE() {
+    var cards = document.getElementById("ieResumenCards");
+    var chart = document.getElementById("ieResumenChart");
+    var block = document.getElementById("ieResumenBlock");
+    if (!block) return;
+    if (!inventarioActual || !inventarioActual.length) {
+      block.hidden = true;
+      return;
+    }
+    block.hidden = false;
+    var res = computarResumen(inventarioActual);
+    renderTarjetas(cards, res.lista);
+    renderBarChartEn(chart, res.lista);
   }
 
   function startApp() {
