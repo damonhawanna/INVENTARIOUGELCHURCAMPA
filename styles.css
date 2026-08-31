@@ -105,6 +105,97 @@ body {
 
 .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
 
+/* ---------- Resumen global por tipo de bien ---------- */
+.resumen-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.resumen-total {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+}
+.resumen-sub {
+  margin: 0.25rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.resumen-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.resumen-card {
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  text-align: center;
+  background: #fff;
+}
+.resumen-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.resumen-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+.resumen-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.chart-label {
+  width: 190px;
+  flex: 0 0 190px;
+  font-size: 0.78rem;
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chart-bar-wrap {
+  flex: 1 1 auto;
+  background: #eef1f6;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+.chart-bar {
+  height: 100%;
+  border-radius: 4px;
+  min-width: 2px;
+  transition: width 0.4s ease;
+}
+.chart-val {
+  width: 80px;
+  flex: 0 0 80px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+@media (max-width: 560px) {
+  .chart-label { width: 120px; flex-basis: 120px; }
+  .chart-val { width: 60px; flex-basis: 60px; }
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);

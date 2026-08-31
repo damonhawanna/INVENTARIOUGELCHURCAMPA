@@ -41,6 +41,9 @@
     el.colList = document.getElementById("colList");
     el.invTable = document.getElementById("invTable");
     el.installBtn = document.getElementById("installBtn");
+    el.resumenCards = document.getElementById("resumenCards");
+    el.resumenChart = document.getElementById("resumenChart");
+    el.resumenTotal = document.getElementById("resumenTotal");
   };
 
   function openDB() {
@@ -725,12 +728,122 @@
     renderInstituciones(lista);
   }
 
+  var CATEGORIAS = [
+    { id: "computadoras", label: "Computadoras", kws: ["COMPUTADORA", "LAPTOP", "NOTEBOOK", "CPU ", "PC "], color: "#1e4d8f" },
+    { id: "tabletas", label: "Tabletas", kws: ["TABLETA", "PAD "], color: "#6a1b9a" },
+    { id: "sillas", label: "Sillas", kws: ["SILLA", "BUTACA"], color: "#00838f" },
+    { id: "mesas", label: "Mesas", kws: ["MESA "], color: "#2e7d32" },
+    { id: "escritorios", label: "Escritorios y Muebles", kws: ["ESCRITORIO", "ESTANTE", "ARCHIVADOR", "ARMARIO", "REPOSTERO", "ANAQUEL", "MODULO DE COMPUTO"], color: "#f57f17" },
+    { id: "carpetas", label: "Carpetas y Bancas", kws: ["CARPETA ", "BANCO "], color: "#ad1457" },
+    { id: "impresoras", label: "Impresoras", kws: ["IMPRESORA", "MULTIFUNCIONAL"], color: "#5d4037" },
+    { id: "proyectores", label: "Proyectores", kws: ["PROYECTOR", "MULTIMEDIA"], color: "#283593" },
+    { id: "pizarras", label: "Pizarras", kws: ["PIZARRA"], color: "#455a64" },
+    { id: "perifericos", label: "Periféricos de Cómputo", kws: ["MONITOR", "TECLADO", "MOUSE", "ESTABILIZADOR", "PARLANTE"], color: "#4a148c" },
+    { id: "bicicletas", label: "Bicicletas", kws: ["BICICLETA"], color: "#bf360c" },
+    { id: "electro", label: "Electrodomésticos", kws: ["COCINA", "REFRIGERADORA", "LAVADORA", "MICROONDAS", "CONGELADORA", "PLANCHA"], color: "#00695c" },
+    { id: "audiovideo", label: "Audio y Video", kws: ["TELEVISOR", "TELEVISION", "RADIO", "MEGAFONO", "EQUIPO DE SONIDO"], color: "#795548" },
+    { id: "musica", label: "Instrumentos Musicales", kws: ["TROMPETA", "GUITARRA", "FLAUTA", "BOMBO", "PIANO", "VIOLIN", "SAXO"], color: "#37474f" },
+    { id: "seguridad", label: "Seguridad, Incendio y Otros", kws: ["EXTINTOR", "CAMARA", "CILINDRO", "BOMBA", "BALON"], color: "#8e24aa" }
+  ];
+
+  function categoriaDeBien(bien) {
+    var b = (bien || "").toUpperCase();
+    for (var i = 0; i < CATEGORIAS.length; i++) {
+      var cat = CATEGORIAS[i];
+      for (var j = 0; j < cat.kws.length; j++) {
+        var kw = cat.kws[j];
+        if (kw.charAt(kw.length - 1) === " ") {
+          if (b.indexOf(kw) !== -1) return cat;
+        } else {
+          if (b === kw.trim() || b.indexOf(kw) !== -1) return cat;
+        }
+      }
+    }
+    return null;
+  }
+
+  function computarResumen() {
+    var totales = {};
+    var contadorCat = {};
+    CATEGORIAS.forEach(function (c) { totales[c.id] = 0; });
+    var otros = 0;
+    registros.forEach(function (r) {
+      var b = r.bien || "";
+      var cat = categoriaDeBien(b);
+      if (cat) totales[cat.id]++;
+      else otros++;
+    });
+    var lista = CATEGORIAS
+      .filter(function (c) { return totales[c.id] > 0; })
+      .map(function (c) { return { id: c.id, label: c.label, count: totales[c.id], color: c.color }; })
+      .sort(function (a, b) { return b.count - a.count; });
+    if (otros > 0) {
+      lista.push({ id: "otros", label: "Otros", count: otros, color: "#bdbdbd" });
+    }
+    return { lista: lista, total: registros.length };
+  }
+
+  function renderResumenGlobal() {
+    if (!el.resumenCards || !registros || !registros.length) return;
+    var res = computarResumen();
+    el.resumenTotal.textContent = res.total.toLocaleString("es-PE") + " bienes en total";
+
+    el.resumenCards.replaceChildren();
+    res.lista.forEach(function (cat) {
+      var card = document.createElement("div");
+      card.className = "resumen-card";
+      card.style.borderTopColor = cat.color;
+      var num = document.createElement("div");
+      num.className = "resumen-num";
+      num.textContent = cat.count.toLocaleString("es-PE");
+      num.style.color = cat.color;
+      var lab = document.createElement("div");
+      lab.className = "resumen-label";
+      lab.textContent = cat.label;
+      card.appendChild(num);
+      card.appendChild(lab);
+      el.resumenCards.appendChild(card);
+    });
+
+    renderBarChart(res.lista);
+  }
+
+  function renderBarChart(lista) {
+    if (!el.resumenChart) return;
+    el.resumenChart.replaceChildren();
+    if (!lista.length) return;
+    var max = lista[0].count;
+    lista.forEach(function (cat) {
+      var row = document.createElement("div");
+      row.className = "chart-row";
+      var lab = document.createElement("div");
+      lab.className = "chart-label";
+      lab.textContent = cat.label;
+      var barWrap = document.createElement("div");
+      barWrap.className = "chart-bar-wrap";
+      var bar = document.createElement("div");
+      bar.className = "chart-bar";
+      bar.style.width = (cat.count / max * 100) + "%";
+      bar.style.background = cat.color;
+      bar.title = cat.label + ": " + cat.count.toLocaleString("es-PE");
+      barWrap.appendChild(bar);
+      var val = document.createElement("div");
+      val.className = "chart-val";
+      val.textContent = cat.count.toLocaleString("es-PE");
+      row.appendChild(lab);
+      row.appendChild(barWrap);
+      row.appendChild(val);
+      el.resumenChart.appendChild(row);
+    });
+  }
+
   function startApp() {
     el.totalRegs.textContent = registros.length.toLocaleString("es-PE");
     el.loading.hidden = true;
 
     directorioInstituciones = construirDirectorios();
 
+    renderResumenGlobal();
     cargarColsVisibles();
     renderColPanel();
     initInstalacion();
