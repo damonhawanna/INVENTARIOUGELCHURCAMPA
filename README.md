@@ -21,6 +21,7 @@ La web es una *Progressive Web App*: puede instalarse en el dispositivo para usa
 - Exportación a Excel (.xlsx) con los filtros aplicados.
 - Columna **"Clase SBN"** que muestra la clasificación oficial del catálogo SBN por cada bien.
 - Resumen global por tipo de bien (tarjetas de totales) y resumen desplegable por institución.
+- **Generador de formularios de Alta** (`formulario.html`): formulario dinámico + importación desde Excel que produce los formatos oficiales **Captación de Datos** y **Relación de Bienes** (.xlsx) prellenados con los datos de la IE (autocompletados desde el catálogo).
 - Funciona sin conexión a internet una vez cargada.
 
 ## Catálogo de instituciones
@@ -38,6 +39,8 @@ python generar_instituciones.py "ruta/al/p.xlsx"
 | Archivo | Descripción |
 |---------|-------------|
 | `index.html` | Interfaz principal |
+| `formulario.html` | Panel de Generador de formularios (Alta de bienes) |
+| `formulario.js` | Lógica del generador de formularios (autocompletar IE, generar .xlsx) |
 | `styles.css` | Estilos |
 | `app.js` | Lógica del cliente |
 | `data.js` | Datos del inventario (48 995 registros, 267 instituciones) |
