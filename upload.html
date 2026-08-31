@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Actualizar Base de Datos - INVENTARIOUGELCHURCAMPA</title>
+  <meta name="theme-color" content="#34599f">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="logo.png" alt="Logo UGEL Churcampa" class="brand-logo">
+        <div>
+          <h1>ACTUALIZAR <span class="accent">BASE</span> DE DATOS</h1>
+          <p class="subtitle">Importar inventario desde archivo Excel</p>
+        </div>
+      </div>
+      <a href="index.html" class="btn btn-ghost">Volver al Inventario</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Subir Archivo Excel (.xls / .xlsx)</h2>
+      <p style="color: var(--muted); margin-top: 0; font-size: 0.9rem;">
+        El archivo debe contener las hojas: SEDE, CETPRO, PRONOEI, CEBE, CEBA, INICIAL, PRIMARIA, SECUNDARIA.
+        Las columnas requeridas son: CODIGO PATRIMONIAL, DENOMINACION BIEN, TIPO, NOMBRE AREA, ESTADO BIEN, CONDICION, entre otras.
+      </p>
+
+      <div id="dropZone" class="drop-zone">
+        <div class="drop-icon">&#128194;</div>
+        <p>Arrastra el archivo Excel aquí</p>
+        <p style="font-size: 0.8rem; color: var(--muted);">o haz clic para seleccionar</p>
+        <input type="file" id="fileInput" accept=".xls,.xlsx" hidden>
+      </div>
+
+      <div id="status" class="status-msg" hidden></div>
+      <div id="progress" class="progress-bar" hidden>
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+
+      <div id="preview" class="preview-box" hidden>
+        <h3>Vista Previa</h3>
+        <div id="previewContent"></div>
+        <button id="confirmBtn" class="btn btn-primary" style="margin-top: 1rem;">
+          Confirmar e Importar Datos
+        </button>
+      </div>
+
+      <div id="result" class="result-box" hidden></div>
+    </section>
+
+    <section class="card">
+      <h2>Estado Actual de la Base de Datos</h2>
+      <div id="currentDataInfo"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>INVENTARIOUGELCHURCAMPA &mdash; Actualización de base de datos</p>
+  </footer>
+
+  <script>
+    (function() {
+      "use strict";
+
+      var SHEETS = ["SEDE", "CETPRO", "PRONOEI", "CEBE", "CEBA", "INICIAL", "PRIMARIA", "SECUNDARIA"];
+      var KEEP = [
+        ["CODIGO PATRIMONIAL", "cod"],
+        ["DENOMINACION BIEN", "bien"],
+        ["TIPO", "tipo"],
+        ["NRO DOC ADQUISICION", "doc"],
+        ["FECHA ADQUISICION", "fecha"],
+        ["VALOR ADQUISICION", "vadq"],
+        ["VALOR NETO", "vneto"],
+        ["NOMBRE AREA", "area"],
+        ["ESTADO BIEN", "estado"],
+        ["CONDICION", "cond"],
+        ["MARCA", "marca"],
+        ["MODELO", "modelo"],
+        ["SERIE", "serie"],
+        ["COLOR", "color"],
+        ["APELLIDO PATERNO", "ap"],
+        ["APELLIDO MATERNO", "am"],
+        ["NOMBRES", "nom"]
+      ];
+      var CATEGORIA = {
+        "SEDE": "SEDE / UGEL",
+        "CETPRO": "CETPRO",
+        "PRONOEI": "PRONOEI",
+        "CEBE": "CEBE",
+        "CEBA": "CEBA",
+        "INICIAL": "INICIAL",
+        "PRIMARIA": "PRIMARIA",
+        "SECUNDARIA": "SECUNDARIA"
+      };
+      var VALORES_LIMPIO = ["sin marca", "sin modelo", "sin serie", "sin medidas", "sin caracteristicas", "no indica", "nan", "sin informacion"];
+
+      var dropZone = document.getElementById("dropZone");
+      var fileInput = document.getElementById("fileInput");
+      var status = document.getElementById("status");
+      var progress = document.getElementById("progress");
+      var progressFill = document.getElementById("progressFill");
+      var preview = document.getElementById("preview");
+      var previewContent = document.getElementById("previewContent");
+      var confirmBtn = document.getElementById("confirmBtn");
+      var result = document.getElementById("result");
+      var currentDataInfo = document.getElementById("currentDataInfo");
+
+      function showStatus(msg, type) {
+        status.hidden = false;
+        status.textContent = msg;
+        status.className = "status-msg status-" + (type || "info");
+      }
+
+      function showProgress(pct) {
+        progress.hidden = false;
+        progressFill.style.width = pct + "%";
+      }
+
+      function hideProgress() {
+        progress.hidden = true;
+        progressFill.style.width = "0%";
+      }
+
+      function limpiar(v) {
+        if (v == null) return "";
+        var s = String(v).trim();
+        if (!s) return "";
+        if (VALORES_LIMPIO.indexOf(s.toLowerCase()) !== -1) return "";
+        return s;
+      }
+
+      function extraerRegistros(sheet, sheetName) {
+        var headers = [];
+        var data = [];
+        sheet.forEach(function(row, idx) {
+          if (idx === 0) {
+            headers = row.map(function(c) { return String(c || "").trim().toUpperCase(); });
+          } else {
+            data.push(row);
+          }
+        });
+
+        var regs = [];
+        data.forEach(function(row) {
+          var r = { cat: CATEGORIA[sheetName] || sheetName };
+          KEEP.forEach(function(pair) {
+            var colName = pair[0];
+            var key = pair[1];
+            var colIdx = headers.indexOf(colName.toUpperCase());
+            if (colIdx !== -1) {
+              var v = limpiar(row[colIdx]);
+              if (v) r[key] = v;
+            }
+          });
+          if (r.bien || r.cod) regs.push(r);
+        });
+        return regs;
+      }
+
+      function procesarExcel(file) {
+        showStatus("Leyendo archivo Excel...", "info");
+        showProgress(10);
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            showProgress(30);
+            var data = new Uint8Array(e.target.result);
+            var workbook = XLSX.read(data, { type: "array" });
+
+            showProgress(50);
+            var totalRegistros = 0;
+            var institucionesMap = {};
+            var todos = [];
+
+            SHEETS.forEach(function(sheetName) {
+              if (workbook.Sheets[sheetName]) {
+                var sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: "" });
+                var regs = extraerRegistros(sheet, sheetName);
+                regs.forEach(function(r) {
+                  todos.push(r);
+                  if (r.area) {
+                    if (!institucionesMap[r.area]) {
+                      institucionesMap[r.area] = { nombre: r.area, cat: r.cat };
+                    }
+                  }
+                });
+              }
+            });
+
+            showProgress(80);
+
+            var instituciones = Object.keys(institucionesMap).map(function(k) {
+              return institucionesMap[k];
+            }).sort(function(a, b) {
+              return a.nombre.toLowerCase().localeCompare(b.nombre.toLowerCase());
+            });
+
+            totalRegistros = todos.length;
+
+            showProgress(100);
+            hideProgress();
+
+            showStatus("Archivo procesado correctamente", "success");
+
+            previewContent.innerHTML =
+              "<p><strong>Registros encontrados:</strong> " + totalRegistros.toLocaleString("es-PE") + "</p>" +
+              "<p><strong>Instituciones únicas:</strong> " + instituciones.length + "</p>" +
+              "<p><strong>Hoja detectada:</strong> " + workbook.SheetNames.join(", ") + "</p>";
+            preview.hidden = false;
+
+            confirmBtn.onclick = function() {
+              var datos = { registros: todos, instituciones: instituciones };
+              try {
+                localStorage.setItem("INVENTARIOUGELCHURCAMPA_CUSTOM", JSON.stringify(datos));
+                localStorage.setItem("INVENTARIOUGELCHURCAMPA_DATE", new Date().toISOString());
+                result.hidden = false;
+                result.className = "result-box result-success";
+                result.innerHTML =
+                  "<h3>&#10004; Datos importados correctamente</h3>" +
+                  "<p><strong>" + totalRegistros.toLocaleString("es-PE") + "</strong> registros de <strong>" + instituciones.length + "</strong> instituciones</p>" +
+                  "<p>Los datos se actualizaron en tiempo real. <a href='index.html' style='color: var(--primary); font-weight: 700;'>Ver Inventario &rarr;</a></p>";
+                showCurrentDataInfo();
+              } catch (err) {
+                result.hidden = false;
+                result.className = "result-box result-error";
+                result.innerHTML = "<h3>Error al guardar</h3><p>" + err.message + "</p>";
+              }
+            };
+          } catch (err) {
+            hideProgress();
+            showStatus("Error al procesar el archivo: " + err.message, "error");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      function showCurrentDataInfo() {
+        var custom = localStorage.getItem("INVENTARIOUGELCHURCAMPA_CUSTOM");
+        var date = localStorage.getItem("INVENTARIOUGELCHURCAMPA_DATE");
+        if (custom) {
+          var data = JSON.parse(custom);
+          currentDataInfo.innerHTML =
+            "<p style='color: var(--primary); font-weight: 700; margin-bottom: 0.5rem;'>&#128274; Base de datos personalizada activa</p>" +
+            "<p><strong>Registros:</strong> " + data.registros.length.toLocaleString("es-PE") + "</p>" +
+            "<p><strong>Instituciones:</strong> " + data.instituciones.length + "</p>" +
+            "<p><strong>Fecha de importación:</strong> " + (date ? new Date(date).toLocaleString("es-PE") : "N/A") + "</p>" +
+            "<button id='clearDataBtn' class='btn btn-ghost btn-sm' style='margin-top: 0.5rem; color: var(--danger); border-color: var(--danger);'>Restaurar datos originales</button>";
+          document.getElementById("clearDataBtn").onclick = function() {
+            localStorage.removeItem("INVENTARIOUGELCHURCAMPA_CUSTOM");
+            localStorage.removeItem("INVENTARIOUGELCHURCAMPA_DATE");
+            showCurrentDataInfo();
+            showStatus("Datos originales restaurados", "success");
+          };
+        } else {
+          currentDataInfo.innerHTML = "<p style='color: var(--muted);'>Usando datos originales del proyecto (data.js)</p>";
+        }
+      }
+
+      dropZone.addEventListener("click", function() { fileInput.click(); });
+      dropZone.addEventListener("dragover", function(e) { e.preventDefault(); dropZone.classList.add("drag-over"); });
+      dropZone.addEventListener("dragleave", function() { dropZone.classList.remove("drag-over"); });
+      dropZone.addEventListener("drop", function(e) {
+        e.preventDefault();
+        dropZone.classList.remove("drag-over");
+        var files = e.dataTransfer.files;
+        if (files.length) procesarExcel(files[0]);
+      });
+      fileInput.addEventListener("change", function() {
+        if (fileInput.files.length) procesarExcel(fileInput.files[0]);
+      });
+
+      showCurrentDataInfo();
+    })();
+  </script>
+</body>
+</html>

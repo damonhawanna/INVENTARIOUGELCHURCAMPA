@@ -2,7 +2,14 @@
 (function () {
   "use strict";
 
-  var DATA = window.INVENTARIOUGELCHURCAMPA || null;
+  var DATA = null;
+  try {
+    var custom = localStorage.getItem("INVENTARIOUGELCHURCAMPA_CUSTOM");
+    if (custom) {
+      DATA = JSON.parse(custom);
+    }
+  } catch (e) { /* ignorar */ }
+  if (!DATA) DATA = window.INVENTARIOUGELCHURCAMPA || null;
   var registros = DATA ? DATA.registros : [];
   var instituciones = DATA ? DATA.instituciones : [];
 

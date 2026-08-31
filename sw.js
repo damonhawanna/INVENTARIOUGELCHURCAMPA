@@ -1,10 +1,11 @@
 /* Service Worker para INVENTARIOUGELCHURCAMPA - permite instalación y uso offline */
 "use strict";
 
-var CACHE_NAME = "inventario-ugel-churcampa-v1";
+var CACHE_NAME = "inventario-ugel-churcampa-v2";
 var CORE_URLS = [
   "./",
   "./index.html",
+  "./upload.html",
   "./styles.css",
   "./app.js",
   "./data.js",
@@ -12,7 +13,8 @@ var CORE_URLS = [
   "./icon-192.png",
   "./icon-512.png",
   "./logo.png",
-  "./logo ugel churcampa.png"
+  "./logo ugel churcampa.png",
+  "https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"
 ];
 
 self.addEventListener("install", function (event) {
