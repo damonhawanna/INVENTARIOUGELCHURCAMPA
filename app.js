@@ -422,6 +422,8 @@
 
     lista.forEach(function (r, i) {
       var tr = document.createElement("tr");
+      if ((r.cond || "") === "B") tr.classList.add("fila-b");
+      else if ((r.cond || "") === "A") tr.classList.add("fila-a");
       tr.appendChild(td(String(i + 1), "num"));
       tr.appendChild(td(r.cod || "\u2014", "cod"));
       tr.appendChild(td(r.bien || "\u2014", "bien"));

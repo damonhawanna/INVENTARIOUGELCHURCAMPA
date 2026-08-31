@@ -308,6 +308,49 @@ body {
 .inv-table tbody tr:nth-child(even) { background: #fafcfa; }
 .inv-table tbody tr:hover { background: var(--primary-light); }
 
+/* Resaltado por tipo de condición (A=alta azul, B=baja roja) */
+.inv-table tbody tr.fila-b {
+  background: #fdecea !important;
+  color: #9a1b1b;
+}
+.inv-table tbody tr.fila-b td {
+  color: #9a1b1b;
+  font-weight: 600;
+}
+.inv-table tbody tr.fila-b:hover { background: #fbdcd9 !important; }.inv-table tbody tr.fila-a {
+  background: #eaf2fc !important;
+  color: #1e4d8f;
+}
+.inv-table tbody tr.fila-a:hover { background: #dcebf8 !important; }
+
+/* celda de condición destacada con píldora de color */
+.inv-table td[data-col="cond"] { font-weight: 700; }
+.inv-table tr.fila-b td[data-col="cond"] { color: #b71c1c; text-align: center; }
+.inv-table tr.fila-a td[data-col="cond"] { color: #1565c0; text-align: center; }
+
+.leyenda {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.leyenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+.leyenda-item i {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.leyenda-alta i { background: #eaf2fc; border: 1px solid #1565c0; }
+.leyenda-baja i { background: #fdecea; border: 1px solid #b71c1c; }
+
 .badge-estado {
   display: inline-block;
   padding: 0.1rem 0.5rem;
