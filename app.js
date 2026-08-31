@@ -44,6 +44,7 @@
     el.resumenCards = document.getElementById("resumenCards");
     el.resumenChart = document.getElementById("resumenChart");
     el.resumenTotal = document.getElementById("resumenTotal");
+    el.resumenStep = document.getElementById("resumenStep");
   };
 
   function openDB() {
@@ -314,6 +315,7 @@
     inventarioActual = registros.filter(function (r) { return set[r.area]; });
 
     el.searchStep.hidden = true;
+    if (el.resumenStep) el.resumenStep.hidden = true;
     el.inventoryStep.hidden = false;
     el.instTitle.textContent = inst.nombre;
     el.instCat.textContent = (inst.cat || "") + (inst.nivel ? " \u2022 " + inst.nivel : "");
@@ -722,6 +724,7 @@
     inventarioActual = [];
     el.inventoryStep.hidden = true;
     el.searchStep.hidden = false;
+    if (el.resumenStep) el.resumenStep.hidden = false;
     el.searchInput.focus();
   }
   function onSearch() {
