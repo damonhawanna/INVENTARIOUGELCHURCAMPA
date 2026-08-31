@@ -155,51 +155,6 @@ body {
   color: var(--muted);
   margin-top: 0.2rem;
 }
-.resumen-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  margin-top: 0.5rem;
-}
-.chart-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.chart-label {
-  width: 190px;
-  flex: 0 0 190px;
-  font-size: 0.78rem;
-  color: var(--text);
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.chart-bar-wrap {
-  flex: 1 1 auto;
-  background: #eef1f6;
-  border-radius: 4px;
-  height: 20px;
-  overflow: hidden;
-}
-.chart-bar {
-  height: 100%;
-  border-radius: 4px;
-  min-width: 2px;
-  transition: width 0.4s ease;
-}
-.chart-val {
-  width: 80px;
-  flex: 0 0 80px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text);
-}
-@media (max-width: 560px) {
-  .chart-label { width: 120px; flex-basis: 120px; }
-  .chart-val { width: 60px; flex-basis: 60px; }
-}
 
 .card {
   background: var(--card);

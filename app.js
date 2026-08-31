@@ -42,7 +42,6 @@
     el.invTable = document.getElementById("invTable");
     el.installBtn = document.getElementById("installBtn");
     el.resumenCards = document.getElementById("resumenCards");
-    el.resumenChart = document.getElementById("resumenChart");
     el.resumenTotal = document.getElementById("resumenTotal");
     el.resumenStep = document.getElementById("resumenStep");
   };
@@ -807,46 +806,15 @@
     });
   }
 
-  function renderBarChartEn(chartEl, lista) {
-    if (!chartEl) return;
-    chartEl.replaceChildren();
-    if (!lista.length) return;
-    var max = lista[0].count;
-    lista.forEach(function (cat) {
-      var row = document.createElement("div");
-      row.className = "chart-row";
-      var lab = document.createElement("div");
-      lab.className = "chart-label";
-      lab.textContent = cat.label;
-      var barWrap = document.createElement("div");
-      barWrap.className = "chart-bar-wrap";
-      var bar = document.createElement("div");
-      bar.className = "chart-bar";
-      bar.style.width = (cat.count / max * 100) + "%";
-      bar.style.background = cat.color;
-      bar.title = cat.label + ": " + cat.count.toLocaleString("es-PE");
-      barWrap.appendChild(bar);
-      var val = document.createElement("div");
-      val.className = "chart-val";
-      val.textContent = cat.count.toLocaleString("es-PE");
-      row.appendChild(lab);
-      row.appendChild(barWrap);
-      row.appendChild(val);
-      chartEl.appendChild(row);
-    });
-  }
-
   function renderResumenGlobal() {
     if (!el.resumenCards || !registros || !registros.length) return;
     var res = computarResumen(registros);
     el.resumenTotal.textContent = res.total.toLocaleString("es-PE") + " bienes en total";
     renderTarjetas(el.resumenCards, res.lista);
-    renderBarChartEn(el.resumenChart, res.lista);
   }
 
   function renderResumenIE() {
     var cards = document.getElementById("ieResumenCards");
-    var chart = document.getElementById("ieResumenChart");
     var block = document.getElementById("ieResumenBlock");
     if (!block) return;
     if (!inventarioActual || !inventarioActual.length) {
@@ -856,7 +824,6 @@
     block.hidden = false;
     var res = computarResumen(inventarioActual);
     renderTarjetas(cards, res.lista);
-    renderBarChartEn(chart, res.lista);
   }
 
   function startApp() {
