@@ -1,7 +1,7 @@
 /* Service Worker para INVENTARIOUGELCHURCAMPA - permite instalación y uso offline */
 "use strict";
 
-var CACHE_NAME = "inventario-ugel-churcampa-v7";
+var CACHE_NAME = "inventario-ugel-churcampa-v8";
 var CORE_URLS = [
   "./",
   "./index.html",
