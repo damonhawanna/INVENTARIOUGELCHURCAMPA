@@ -21,7 +21,9 @@ La web es una *Progressive Web App*: puede instalarse en el dispositivo para usa
 - Exportación a Excel (.xlsx) con los filtros aplicados.
 - Columna **"Clase SBN"** que muestra la clasificación oficial del catálogo SBN por cada bien.
 - Resumen global por tipo de bien (tarjetas de totales) y resumen desplegable por institución.
-- **Generador de formularios de Alta** (`formulario.html`): formulario dinámico + importación desde Excel que produce los formatos oficiales **Captación de Datos** y **Relación de Bienes** (.xlsx) prellenados con los datos de la IE (autocompletados desde el catálogo).
+- **Generador de formularios** (`formulario.html`): dos módulos en pestañas:
+  - **Alta de bienes** — formulario dinámico + importación desde Excel que produce los formatos oficiales **Captación de Datos** y **Relación de Bienes** (.xlsx) prellenados.
+  - **Baja de bienes** — produce la **Relación de Bienes a dar de Baja** (Anexo 28-A) con total de valor en libros y bloque de firmas.
 - Funciona sin conexión a internet una vez cargada.
 
 ## Catálogo de instituciones

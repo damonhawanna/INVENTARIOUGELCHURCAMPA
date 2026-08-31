@@ -10,7 +10,7 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <style>
     .form-page { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
-    .f-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem; }
+    .f-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem; }
     .f-field { display: flex; flex-direction: column; gap: 0.25rem; }
     .f-field label { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
     .f-field input, .f-field select, .f-field textarea {
@@ -23,15 +23,21 @@
     table.bienes-table { width: 100%; border-collapse: collapse; min-width: 1700px; }
     .bienes-table th { background: var(--primary); color: #fff; padding: 0.45rem 0.5rem; font-size: 0.72rem; text-align: left; white-space: nowrap; position: sticky; top: 0; }
     .bienes-table td { padding: 0.3rem 0.35rem; border-bottom: 1px solid var(--border); vertical-align: top; }
-    .bienes-table input { width: 100%; padding: 0.35rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.8rem; font-family: inherit; }
+    .bienes-table input, .bienes-table select { width: 100%; padding: 0.35rem 0.4rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.8rem; font-family: inherit; }
     .bienes-table td.btn-col { width: 40px; text-align: center; }
     .btn-rem { background: var(--danger); color: #fff; border: none; border-radius: 6px; cursor: pointer; width: 26px; height: 26px; font-size: 1rem; line-height: 1; }
     .btn-add { border: 1px dashed var(--primary); color: var(--primary); background: var(--primary-light); padding: 0.45rem 0.9rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .acciones { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
     .result-box { margin-top: 1rem; }
-    .ucd { display: block; font-size: 0.68rem; color: #9aa4b2; margin-top: 0.15rem; }
     .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; transition: background 0.2s; }
     .drop-zone.drag-over { background: var(--primary-light); border-color: var(--primary); }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .tab { flex: 1; min-width: 180px; padding: 0.9rem 1rem; border: 2px solid var(--border); border-radius: 12px;
+      background: #fff; cursor: pointer; font-weight: 700; font-size: 1rem; color: var(--muted); transition: all 0.15s; text-align: center; }
+    .tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .tab.alt.active { background: #1e8e4e; border-color: #1e8e4e; }
+    .tab.baja.active { background: var(--danger); border-color: var(--danger); }
+    .tab-note { display: block; font-size: 0.72rem; font-weight: 500; margin-top: 0.2rem; opacity: 0.85; }
   </style>
 </head>
 <body>
@@ -41,7 +47,7 @@
         <img src="logo.png" alt="Logo UGEL Churcampa" class="brand-logo">
         <div>
           <h1>GENERADOR <span class="accent">DE</span> FORMULARIOS</h1>
-          <p class="subtitle">Alta de bienes patrimoniales</p>
+          <p class="subtitle">Alta y Baja de bienes patrimoniales</p>
         </div>
       </div>
       <a href="index.html" class="btn btn-ghost" style="color: #fff; border-color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.85rem;">
@@ -51,6 +57,17 @@
   </header>
 
   <main class="form-page">
+    <div class="tabs">
+      <button id="tabAlta" class="tab alt active" type="button">
+        &#10004; Alta de bienes
+        <span class="tab-note">Captación de Datos + Relación de Bienes</span>
+      </button>
+      <button id="tabBaja" class="tab baja" type="button">
+        &#10006; Baja de bienes
+        <span class="tab-note">Relación de Bienes a dar de Baja (Anexo 28-A)</span>
+      </button>
+    </div>
+
     <section class="card">
       <h2>1. Institución Educativa</h2>
       <p class="resumen-sub">Selecciona la institución o escribe su código modular para autocompletar sus datos.</p>
@@ -85,56 +102,71 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="cardAlta">
       <div class="bienes-head">
         <h2 style="margin:0;">3. Bienes a dar de ALTA</h2>
         <div style="display:flex; gap:0.5rem; align-items:center;">
-          <label id="importLabel" class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">&#128194; Importar Excel</label>
-          <input type="file" id="importFile" accept=".xls,.xlsx,csv" hidden>
-          <button id="addRowBtn" class="btn-add" type="button">+ Agregar bien</button>
+          <label id="importLabelAlta" class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">&#128194; Importar Excel</label>
+          <input type="file" id="importFileAlta" accept=".xls,.xlsx,csv" hidden>
+          <button id="addRowBtnAlta" class="btn-add" type="button">+ Agregar bien</button>
         </div>
       </div>
-
-      <div id="dropZone" class="drop-zone" style="margin-bottom:0.75rem;">
-        <p style="margin:0;">&#128194; Arrastra aquí tu Excel con los bienes, o usa el botón "Importar Excel"</p>
+      <div id="dropZoneAlta" class="drop-zone" style="margin-bottom:0.75rem;">
+        <p style="margin:0;">&#128194; Arrastra aquí tu Excel con los bienes a dar de alta, o usa "Importar Excel"</p>
       </div>
-
       <div class="bienes-table-wrap">
-        <table class="bienes-table" id="bienesTable">
+        <table class="bienes-table" id="bienesTableAlta">
           <thead>
             <tr>
-              <th>N°</th>
-              <th>Código Patrimonial</th>
-              <th>Denominación del Bien</th>
-              <th>Marca</th>
-              <th>Modelo</th>
-              <th>Tipo</th>
-              <th>Color</th>
-              <th>Serie / Dimensiones</th>
-              <th>Estado</th>
-              <th>Valor Costo (S/)</th>
-              <th>Cant.</th>
-              <th>Valor Total (S/)</th>
-              <th>Causal / Motivo de Alta</th>
-              <th>Observaciones</th>
-              <th></th>
+              <th>N°</th><th>Código Patrimonial</th><th>Denominación del Bien</th><th>Marca</th><th>Modelo</th>
+              <th>Tipo</th><th>Color</th><th>Serie / Dimensiones</th><th>Estado</th>
+              <th>Valor Costo (S/)</th><th>Cant.</th><th>Valor Total (S/)</th><th>Causal / Motivo de Alta</th><th>Observaciones</th><th></th>
             </tr>
           </thead>
-          <tbody id="bienesBody"></tbody>
+          <tbody id="bienesBodyAlta"></tbody>
         </table>
+      </div>
+      <div class="acciones">
+        <button id="genCaptacion" class="btn btn-primary">&#11015; Descargar Captación de Datos (.xlsx)</button>
+        <button id="genRelacion" class="btn btn-primary">&#11015; Descargar Relación de Bienes (.xlsx)</button>
+        <button id="genAmbos" class="btn btn-ghost">Generar ambos</button>
       </div>
     </section>
 
-    <div class="acciones">
-      <button id="genCaptacion" class="btn btn-primary">&#11015; Descargar Captación de Datos (.xlsx)</button>
-      <button id="genRelacion" class="btn btn-primary">&#11015; Descargar Relación de Bienes (.xlsx)</button>
-      <button id="genAmbos" class="btn btn-ghost">Generar ambos</button>
-    </div>
+    <section class="card" id="cardBaja" hidden>
+      <div class="bienes-head">
+        <h2 style="margin:0;">3. Bienes a dar de BAJA</h2>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <label id="importLabelBaja" class="btn btn-ghost btn-sm" style="cursor:pointer; margin:0;">&#128194; Importar Excel</label>
+          <input type="file" id="importFileBaja" accept=".xls,.xlsx,csv" hidden>
+          <button id="addRowBtnBaja" class="btn-add" type="button">+ Agregar bien</button>
+        </div>
+      </div>
+      <div id="dropZoneBaja" class="drop-zone" style="margin-bottom:0.75rem;">
+        <p style="margin:0;">&#128194; Arrastra aquí tu Excel con los bienes a dar de baja, o usa "Importar Excel"</p>
+      </div>
+      <div class="bienes-table-wrap">
+        <table class="bienes-table" id="bienesTableBaja">
+          <thead>
+            <tr>
+              <th>N°</th><th>Código Patrimonial</th><th>Denominación del Bien</th><th>Marca</th><th>Modelo</th>
+              <th>Tipo</th><th>Color</th><th>Serie / Dimensiones</th><th>N° Placa</th><th>N° Motor</th>
+              <th>N° Chasis</th><th>Año Fabr.</th><th>Estado</th><th>Valor en Libros (S/)</th><th>Causal de Baja</th><th>Ubicación</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="bienesBodyBaja"></tbody>
+        </table>
+      </div>
+      <div class="acciones">
+        <button id="genBaja" class="btn btn-primary">&#11015; Descargar Relación de Bienes a dar de Baja (.xlsx)</button>
+      </div>
+    </section>
+
     <div id="result" class="result-box" hidden></div>
   </main>
 
   <footer class="app-footer">
-    <p>INVENTARIOUGELCHURCAMPA &mdash; Generador de formularios de Alta de bienes</p>
+    <p>INVENTARIOUGELCHURCAMPA &mdash; Generador de formularios de Alta y Baja de bienes</p>
   </footer>
 
   <script src="instituciones.js"></script>
