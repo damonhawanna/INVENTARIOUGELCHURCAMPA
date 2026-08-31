@@ -23,7 +23,7 @@ La web es una *Progressive Web App*: puede instalarse en el dispositivo para usa
 - Resumen global por tipo de bien (tarjetas de totales) y resumen desplegable por institución.
 - **Generador de formularios** (`formulario.html`): dos módulos en pestañas:
   - **Alta de bienes** — formulario dinámico + importación desde Excel que produce los formatos oficiales **Captación de Datos** y **Relación de Bienes** (.xlsx) prellenados.
-  - **Baja de bienes** — produce la **Relación de Bienes a dar de Baja** (Anexo 28-A) con total de valor en libros y bloque de firmas.
+  - **Baja de bienes** — genera 3 formatos: la **Relación de Bienes a dar de Baja** (Anexo 28-A) con total de valor en libros y bloque de firmas, el **Anexo 17-A** (Muebles y Enseres) y el **Anexo 17-B** (Maquinaria y Equipo) con **valorización automatizada** (VA = VSN × factor; y VSN, R=10%VSN, D=(VSN−R)×E/T, VC=(VSN−D)×G, con la edad E calculada desde el año de fabricación).
 - Funciona sin conexión a internet una vez cargada.
 
 ## Catálogo de instituciones

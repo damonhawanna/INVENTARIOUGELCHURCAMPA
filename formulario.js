@@ -22,7 +22,7 @@
     baja: {
       body: $("bienesBodyBaja"), addBtn: $("addRowBtnBaja"),
       file: $("importFileBaja"), label: $("importLabelBaja"), drop: $("dropZoneBaja"),
-      genBaja: $("genBaja")
+      genBaja: $("genBaja"), gen17A: $("gen17A"), gen17B: $("gen17B"), genBajaTodo: $("genBajaTodo")
     }
   };
 
@@ -247,11 +247,16 @@
   var FIELDS_BAJA = [
     { field: "codigo", placeholder: "Código patrimonial" },
     { field: "den", placeholder: "Denominación" },
+    { field: "cant", default: "1" },
     { field: "marca" }, { field: "modelo" }, { field: "tipo" }, { field: "color" },
     { field: "serie", placeholder: "Serie / dimensiones" },
     { field: "placa" }, { field: "motor" }, { field: "chasis" }, { field: "anio", placeholder: "Año" },
     { field: "estado" },
     { field: "valor", placeholder: "Valor en libros 0.00" },
+    { field: "vsn", placeholder: "VSN (0.00)" },
+    { field: "vida", placeholder: "P (años)" },
+    { field: "grado", placeholder: "G (%)" },
+    { field: "factor", placeholder: "Factor (%)" },
     { field: "causal", type: "select", opciones: CAUSALES_BAJA },
     { field: "ubicacion" }
   ];
@@ -468,6 +473,101 @@
     return { nombre: "Relación de Baja", hoja: ws };
   }
 
+  // ---------- Valorización ----------
+  function anioActual() { return new Date().getFullYear(); }
+
+  function edadBien(b) {
+    var a = valorNum(b.anio);
+    return (a > 1900 && a <= anioActual()) ? (anioActual() - a) : 0;
+  }
+
+  // Anexo 17-A: Muebles y Enseres
+  // VA unitario = VSN x Factor de depreciación ; VA total = VA unit x cantidad
+  function valorizar17A(b) {
+    var vsn = valorNum(b.vsn);
+    var factor = valorNum(b.factor) / 100;
+    if (!factor && b.estado) {
+      var es = String(b.estado).toUpperCase();
+      factor = /MALO|INSERVIBLE/.test(es) ? 0.80 : /REGUL|DEFICIENTE/.test(es) ? 0.50 : 0.20;
+    }
+    var va = vsn * factor;
+    var q = valorNum(b.cant) || 1;
+    return { vsn: vsn, factor: factor, vaUnit: va, vaTotal: va * q };
+  }
+
+  // Anexo 17-B: Maquinaria y Equipo
+  // E=edad; T=E+P; R=10%VSN; D=(VSN-R)xE/T; G=grado/100; VC unit=(VSN-D)xG; total=VCunit x cant
+  function valorizar17B(b) {
+    var vsn = valorNum(b.vsn);
+    var E = edadBien(b);
+    var P = valorNum(b.vida);
+    var T = E + P;
+    var R = 0.10 * vsn;
+    var D = T > 0 ? ((vsn - R) * E / T) : (vsn - R);
+    var G = valorNum(b.grado) / 100;
+    if (!G && b.estado) {
+      var es = String(b.estado).toUpperCase();
+      G = /MALO|INSERVIBLE/.test(es) ? 0.20 : /REGUL|DEFICIENTE/.test(es) ? 0.50 : 0.90;
+    }
+    var vcUnit = (vsn - D) * G;
+    var q = valorNum(b.cant) || 1;
+    return { vsn: vsn, E: E, P: P, T: T, R: R, D: D, G: G, vcUnit: vcUnit, vcTotal: vcUnit * q };
+  }
+
+  function nz(v) { return (v === 0) ? "" : Math.round(v * 100) / 100; }
+
+  function hoja17A(bienes, ie) {
+    var aoa = [];
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["ANEXO 17-A", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["RELACION DE BIENES MUEBLES Y ENSERES TASADOS", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["IIEE: " + ie.nombre + "    DISTRITO: " + ie.distrito + "    FECHA: " + ie.fecha, "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["ITEMS", "CANTIDAD", "DESCRIPCION DEL BIEN", "", "", "", "", "", "VALORIZACION"]);
+    aoa.push(["", "", "DENOMINACION", "MARCA", "MODELO", "TIPO", "COLOR", "SERIE/DIMENSION", "ESTADO", "VALOR SIMILAR NUEVO DEL BIEN (Proformas y otros) S/.", "FACTOR DE DEPRECIACION", "VALOR ACTUAL UNITARIO S/.", "VALOR ACTUAL TOTAL S/."]);
+    var tTotal = 0;
+    bienes.forEach(function (b, i) {
+      var v = valorizar17A(b);
+      tTotal += v.vaTotal;
+      aoa.push([String(i + 1), b.cant || "1", b.den, b.marca, b.modelo, b.tipo, b.color, b.serie, b.estado, nz(v.vsn), nz(v.factor * 100) + "%", nz(v.vaUnit), nz(v.vaTotal)]);
+    });
+    while (aoa.length < 30) aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "TOTAL", nz(tTotal)]);
+    aoa.push(["RESPONSABLE DE PATRIMONIO: " + ie.director, "", "", "", "", "", "", "", "", "", "", "DIRECTOR DE LA IIEE", ""]);
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 6 }, { wch: 9 }, { wch: 26 }, { wch: 12 }, { wch: 11 }, { wch: 8 }, { wch: 8 }, { wch: 14 }, { wch: 11 }, { wch: 14 }, { wch: 13 }, { wch: 15 }, { wch: 14 }];
+    return { nombre: "Anexo 17-A Muebles", hoja: ws };
+  }
+
+  function hoja17B(bienes, ie) {
+    var aoa = [];
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["ANEXO 17-B", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["RELACION DE BIENES MAQUINARIAS, EQUIPOS TASADOS", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["IIEE: " + ie.nombre + "    DISTRITO: " + ie.distrito + "    FECHA: " + ie.fecha, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["ITEMS", "CANTIDAD", "DESCRIPCION DEL BIEN", "", "", "", "", "", "VALORIZACION"]);
+    aoa.push(["", "", "DENOMINACION", "MARCA", "MODELO", "TIPO", "COLOR", "SERIE/DIMENSION", "ESTADO", "VALOR SIMILAR NUEVO (Proformas)", "R=10%VSN", "E=Edad", "P=Vida Util restante", "T=E+P", "DEPRECIACION D=(VSN-R)xE/T", "GRADO OPERATIVIDAD G%", "VALOR COMERCIAL UNITARIO S/.", "VALOR COMERCIAL TOTAL S/."]);
+    var tTotal = 0;
+    bienes.forEach(function (b, i) {
+      var v = valorizar17B(b);
+      tTotal += v.vcTotal;
+      aoa.push([String(i + 1), b.cant || "1", b.den, b.marca, b.modelo, b.tipo, b.color, b.serie, b.estado, nz(v.vsn), nz(v.R), nz(v.E) + " años", nz(v.P), nz(v.T), nz(v.D), nz(v.G * 100) + "%", nz(v.vcUnit), nz(v.vcTotal)]);
+    });
+    while (aoa.length < 32) aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    aoa.push(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "TOTAL", nz(tTotal)]);
+    aoa.push(["RESPONSABLE DE PATRIMONIO: " + ie.director, "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "DIRECTOR DE LA IIEE", ""]);
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = [{ wch: 6 }, { wch: 9 }, { wch: 24 }, { wch: 11 }, { wch: 10 }, { wch: 7 }, { wch: 7 }, { wch: 13 }, { wch: 10 }, { wch: 13 }, { wch: 11 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 15 }, { wch: 9 }, { wch: 15 }, { wch: 14 }];
+    return { nombre: "Anexo 17-B Maquinaria", hoja: ws };
+  }
+
   // ---------- Acciones ----------
   function validarParaGenerar(tbody, fields) {
     var ie = datosIE();
@@ -494,6 +594,32 @@
   el.baja.genBaja.addEventListener("click", function () {
     var d = validarParaGenerar(el.baja.body, FIELDS_BAJA); if (!d) return;
     escribir([hojaRelacionBaja(d.bienes, d.ie)], "Relacion-de-Bienes-a-dar-de-Baja-" + slug(d.ie.nombre) + ".xlsx");
+  });
+
+  function validarVSN(d) {
+    if (!d.bienes.some(function (b) { return valorNum(b.vsn) > 0; })) {
+      mostrarResultado("Para los anexos de valorización ingresa el <strong>Valor Similar Nuevo (VSN)</strong> de al menos un bien.", true);
+      return false;
+    }
+    return true;
+  }
+
+  el.baja.gen17A.addEventListener("click", function () {
+    var d = validarParaGenerar(el.baja.body, FIELDS_BAJA); if (!d) return;
+    if (!validarVSN(d)) return;
+    escribir([hoja17A(d.bienes, d.ie)], "Anexo-17A-Muebles-y-Enseres-" + slug(d.ie.nombre) + ".xlsx");
+  });
+  el.baja.gen17B.addEventListener("click", function () {
+    var d = validarParaGenerar(el.baja.body, FIELDS_BAJA); if (!d) return;
+    if (!validarVSN(d)) return;
+    escribir([hoja17B(d.bienes, d.ie)], "Anexo-17B-Maquinaria-y-Equipo-" + slug(d.ie.nombre) + ".xlsx");
+  });
+  el.baja.genBajaTodo.addEventListener("click", function () {
+    var d = validarParaGenerar(el.baja.body, FIELDS_BAJA); if (!d) return;
+    var base = slug(d.ie.nombre);
+    escribir([hojaRelacionBaja(d.bienes, d.ie)], "Relacion-de-Bienes-a-dar-de-Baja-" + base + ".xlsx");
+    escribir([hoja17A(d.bienes, d.ie)], "Anexo-17A-Muebles-y-Enseres-" + base + ".xlsx");
+    escribir([hoja17B(d.bienes, d.ie)], "Anexo-17B-Maquinaria-y-Equipo-" + base + ".xlsx");
   });
 
   // ---------- Init ----------

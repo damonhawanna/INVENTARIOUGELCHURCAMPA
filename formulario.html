@@ -149,9 +149,12 @@
         <table class="bienes-table" id="bienesTableBaja">
           <thead>
             <tr>
-              <th>N°</th><th>Código Patrimonial</th><th>Denominación del Bien</th><th>Marca</th><th>Modelo</th>
+              <th>N°</th><th>Código Patrimonial</th><th>Denominación del Bien</th><th>Cant.</th>
+              <th>Marca</th><th>Modelo</th>
               <th>Tipo</th><th>Color</th><th>Serie / Dimensiones</th><th>N° Placa</th><th>N° Motor</th>
-              <th>N° Chasis</th><th>Año Fabr.</th><th>Estado</th><th>Valor en Libros (S/)</th><th>Causal de Baja</th><th>Ubicación</th><th></th>
+              <th>N° Chasis</th><th>Año Fabr.</th><th>Estado</th><th>Valor en Libros (S/)</th>
+              <th>V.Neto Sim. Nuevo VSN (S/)</th><th>Vida Útil Rest. P (años)</th><th>Grado de Operat. G (%)</th><th>Factor Deprec. (%)</th>
+              <th>Causal de Baja</th><th>Ubicación</th><th></th>
             </tr>
           </thead>
           <tbody id="bienesBodyBaja"></tbody>
@@ -160,6 +163,16 @@
       <div class="acciones">
         <button id="genBaja" class="btn btn-primary">&#11015; Descargar Relación de Bienes a dar de Baja (.xlsx)</button>
       </div>
+      <div class="acciones">
+        <button id="gen17A" class="btn btn-primary">&#11015; Descargar Anexo 17-A (Muebles y Enseres) (.xlsx)</button>
+        <button id="gen17B" class="btn btn-primary">&#11015; Descargar Anexo 17-B (Maquinaria y Equipo) (.xlsx)</button>
+        <button id="genBajaTodo" class="btn btn-ghost">Descargar los 3 de baja</button>
+      </div>
+      <p class="resumen-sub" style="margin-top:0.75rem;">
+        <strong>Valorización 17-A:</strong> VA unitario = VSN &times; Factor de depreciación.
+        <strong>17-B:</strong> R=10%&times;VSN; T=E+P (E=años transcurridos desde el año de fabricación); D=(VSN-R)&times;E/T; VC unitario=(VSN-D)&times;G; Total=unitario&times;cantidad.
+        La edad E se calcula automáticamente del <em>Año de fabricación</em>.
+      </p>
     </section>
 
     <div id="result" class="result-box" hidden></div>
