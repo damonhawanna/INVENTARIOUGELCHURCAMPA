@@ -152,8 +152,30 @@
     }
 
     // instituciones derivadas de las áreas SIGA (para las que no están en el catálogo: SEDE, oficinas, etc.)
+    // se excluyen para evitar duplicados las áreas SIGA que ya se enlazan con una institución del catálogo
     instituciones = instituciones || [];
+    var cubiertas = {};
+    if (CATALOGO && CATALOGO.instituciones) {
+      CATALOGO.instituciones.forEach(function (cat) {
+        var codCorto = cat.cod_corto || "";
+        instituciones.forEach(function (inst) {
+          if (!inst.nombre) return;
+          var areaN = normalize(inst.nombre);
+          var nums = areaACodigoCorto(inst.nombre);
+          var ok = false;
+          if (codCorto && nums.indexOf(codCorto) !== -1) ok = true;
+          if (!ok) {
+            var words = normalize(cat.nombre).split(/\s+/).filter(function (w) {
+              return w.length >= 4 && !/^\d+$/.test(w);
+            });
+            if (words.length && words.every(function (w) { return areaN.indexOf(w) !== -1; })) ok = true;
+          }
+          if (ok) cubiertas[inst.nombre] = true;
+        });
+      });
+    }
     instituciones.forEach(function (inst) {
+      if (cubiertas[inst.nombre]) return; // ya cubierta por el catálogo
       directorio.push({
         origen: "siga",
         nombre: inst.nombre,
