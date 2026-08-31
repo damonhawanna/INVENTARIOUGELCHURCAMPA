@@ -126,10 +126,38 @@ body {
   color: var(--muted);
   font-size: 0.85rem;
 }
+.ie-resumen-block {
+  margin: 0.5rem 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fbfcff;
+  padding: 0.25rem 0.9rem;
+}
+.ie-resumen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.6rem 0;
+  user-select: none;
+}
+.ie-resumen-head::-webkit-details-marker { display: none; }
 .ie-resumen-head h3 {
-  margin: 1rem 0 0.25rem;
+  margin: 0;
   font-size: 1.05rem;
   color: var(--text);
+}
+.ie-resumen-hint {
+  font-size: 0.78rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+.ie-resumen-block[open] .ie-resumen-hint::before { content: "\25BC "; }
+.ie-resumen-block:not([open]) .ie-resumen-hint::before { content: "\25B6 "; }
+#ieResumenCards {
+  margin: 0 0 0.75rem;
 }
 .resumen-cards {
   display: grid;
