@@ -35,6 +35,7 @@
     el.invBody = document.getElementById("invBody");
     el.invEmpty = document.getElementById("invEmpty");
     el.exportBtn = document.getElementById("exportBtn");
+    el.exportPdfBtn = document.getElementById("exportPdfBtn");
     el.totalRegs = document.getElementById("totalRegs");
     el.colBtn = document.getElementById("colBtn");
     el.colPanel = document.getElementById("colPanel");
@@ -533,6 +534,128 @@
     el.exportBtn.href = URL.createObjectURL(blob);
     el.exportBtn.download = nombreArchivo;
   }
+
+  function descargarPDF(bytes, nombre) {
+    var blob = new Blob([bytes], { type: "application/pdf" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+
+  function exportarPDF() {
+    if (!window.PDFLib) {
+      alert("La librería de PDF aún no está disponible. Revisa tu conexión y vuelve a intentarlo.");
+      return;
+    }
+    var filas = inventarioActual.filter(function (r) { return aplicarFiltroUnico(r); });
+    var nombre = "inventario_" + (institucionSeleccionada.nombre.replace(/[^\w]+/g, "_")) + ".pdf";
+    var { PDFDocument, rgb, StandardFonts } = window.PDFLib;
+    var W = 792, H = 612, margen = 40, x0 = margen;
+    var cabs = ["N°", "Código", "Denominación", "Tipo", "Clase SBN", "Estado", "Cond", "Valor Adq", "Valor Neto", "Responsable"];
+    var anchos = [28, 64, 160, 56, 76, 52, 26, 58, 58, 92];
+    var totalW = anchos.reduce(function (a, b) { return a + b; }, 0);
+    var texColor = rgb(0.1, 0.1, 0.1);
+    var lineColor = rgb(0.55, 0.55, 0.55);
+    var headFill = rgb(0.86, 0.88, 0.92);
+    var altFill = rgb(0.965, 0.967, 0.972);
+
+    PDFDocument.create().then(function (doc) {
+      return doc.embedFont(StandardFonts.Helvetica).then(function (font) {
+        return doc.embedFont(StandardFonts.HelveticaBold).then(function (bold) {
+          var fecha = new Date().toLocaleString("es-PE");
+          var page = doc.addPage([W, H]);
+          page.drawText("UGEL CHURCAMPA - INVENTARIO PATRIMONIAL", { x: x0, y: H - 46, size: 14, font: bold, color: texColor });
+          page.drawText("Institución: " + institucionSeleccionada.nombre, { x: x0, y: H - 66, size: 11, font: font, color: texColor });
+          page.drawText("Total de bienes: " + filas.length + "    |    Generado: " + fecha, { x: x0, y: H - 82, size: 9, font: font, color: texColor });
+          page.drawLine({ start: { x: x0, y: H - 90 }, end: { x: W - margen, y: H - 90 }, thickness: 0.8, color: lineColor });
+
+          var filaAlto = 15, headAlto = 17, yTop = H - 98;
+
+          function trunca(texto, ancho) {
+            var t = String(texto == null ? "" : texto);
+            if (font.widthOfTextAtSize(t, 8) <= ancho - 4) return t;
+            while (t.length > 1 && font.widthOfTextAtSize(t + "...", 8) > ancho - 4) t = t.slice(0, -1);
+            return t + "...";
+          }
+
+          function dibujarEncabezado(pg, y) {
+            pg.drawRectangle({ x: x0, y: y - headAlto, width: totalW, height: headAlto, color: headFill });
+            var x = x0;
+            for (var c = 0; c < cabs.length; c++) {
+              pg.drawText(cabs[c], { x: x + 3, y: y - headAlto + 4, size: 8, font: bold, color: texColor });
+              pg.drawRectangle({ x: x, y: y - headAlto, width: anchos[c], height: headAlto, borderColor: lineColor, borderWidth: 0.4 });
+              x += anchos[c];
+            }
+            return y - headAlto;
+          }
+
+          yTop = dibujarEncabezado(page, yTop);
+
+          filas.forEach(function (r, i) {
+            var celdas = [
+              i + 1,
+              r.cod,
+              r.bien,
+              r.tipo,
+              claseSBN(r),
+              estadoTexto(r.estado),
+              r.cond,
+              numOrTexto(r.vadq),
+              numOrTexto(r.vneto),
+              responsable(r)
+            ];
+            if (yTop - filaAlto < 30) {
+              page = doc.addPage([W, H]);
+              yTop = H - 40;
+              yTop = dibujarEncabezado(page, yTop);
+            }
+            if (i % 2 === 1) {
+              page.drawRectangle({ x: x0, y: yTop - filaAlto, width: totalW, height: filaAlto, color: altFill });
+            }
+            var x = x0;
+            for (var c = 0; c < celdas.length; c++) {
+              var txt = trunca(celdas[c], anchos[c]);
+              if (c === 0) {
+                page.drawText(txt, { x: x + 3, y: yTop - filaAlto + 4, size: 8, font: font, color: texColor });
+              } else {
+                page.drawText(txt, { x: x + 3, y: yTop - filaAlto + 4, size: 8, font: font, color: texColor });
+              }
+              page.drawRectangle({ x: x, y: yTop - filaAlto, width: anchos[c], height: filaAlto, borderColor: lineColor, borderWidth: 0.4 });
+              x += anchos[c];
+            }
+            yTop -= filaAlto;
+          });
+
+          return doc.save();
+        });
+      });
+    }).then(function (bytes) {
+      if (!window.PDFEncrypt) {
+        throw new Error("Librería de cifrado PDF no disponible");
+      }
+      return window.PDFEncrypt.encryptPDF(bytes, "", {
+        ownerPassword: "Excelxie@3mil",
+        allowPrinting: false,
+        allowModifying: false,
+        allowCopying: false,
+        allowAnnotating: false,
+        allowFillingForms: false,
+        allowExtraction: false,
+        allowAssembly: false,
+        allowHighQualityPrint: false
+      });
+    }).then(function (bytes) {
+      descargarPDF(bytes, nombre);
+    }).catch(function (err) {
+      console.error("Error al generar el PDF:", err);
+      alert("No se pudo generar el PDF.");
+    });
+  }
   function numOrTexto(v) {
     if (!v) return "";
     var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ""));
@@ -873,7 +996,10 @@
     el.filterEstado.addEventListener("change", aplicarFiltros);
     el.filterCond.addEventListener("change", aplicarFiltros);
     el.filterTipo.addEventListener("change", aplicarFiltros);
-    el.exportBtn.addEventListener("click", exportarXLSX);
+    el.exportPdfBtn.addEventListener("click", exportarPDF);
+    el.exportBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+    });
   }
 
   function init() {

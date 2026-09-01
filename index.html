@@ -132,7 +132,8 @@
         <span id="shownCount" class="shown-count"></span>
         <div class="toolbar-actions">
           <button id="colBtn" class="btn btn-ghost btn-sm" type="button">Columnas</button>
-          <a id="exportBtn" class="btn btn-ghost btn-sm" download="inventario.xlsx">Descargar Excel</a>
+          <a id="exportPdfBtn" class="btn btn-ghost btn-sm">Descargar PDF</a>
+          <a id="exportBtn" class="btn btn-ghost btn-sm" tabindex="-1" aria-disabled="true" title="Exportación a Excel deshabilitada temporalmente">Excel (deshabilitado)</a>
         </div>
       </div>
 
@@ -179,6 +180,8 @@
   <script src="data.js"></script>
   <script src="instituciones.js"></script>
   <script src="mapeo_sbn.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@pdfsmaller/pdf-encrypt@1.2.0/dist/pdf-encrypt.umd.js"></script>
   <script src="app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
